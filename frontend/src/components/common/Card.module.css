@@ -1,0 +1,16 @@
+.card {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.pad_sm { padding: 16px; }
+.pad_md { padding: 24px; }
+.pad_lg { padding: 32px; }
+.pad_none { padding: 0; }
+
+.hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-float);
+}

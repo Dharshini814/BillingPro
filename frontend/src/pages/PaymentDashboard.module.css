@@ -1,0 +1,51 @@
+.page { display: flex; flex-direction: column; gap: 22px; animation: fadeInUp 0.4s var(--ease-out) both; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.title { font-size: 26px; font-weight: 800; letter-spacing: -0.025em; }
+.subtitle { font-size: 14px; color: var(--color-text-secondary); margin-top: 3px; }
+.statusTabs { display: flex; gap: 6px; background: var(--color-bg); box-shadow: var(--shadow-pressed); border-radius: var(--radius-pill); padding: 4px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; border: none; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; color: var(--color-text-secondary); background: transparent; transition: all var(--transition-fast); cursor: pointer; }
+.tabActive { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3); }
+.tableCard { background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); overflow: hidden; }
+.tableHead, .tableRow { display: grid; grid-template-columns: 1.4fr 1.6fr 1fr 1.2fr 1.1fr 1fr 1fr; align-items: center; padding: 14px 22px; gap: 14px; }
+.tableHead { font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(var(--color-primary-rgb), 0.04); border-bottom: 1px solid var(--color-border); }
+.tableRow { border-bottom: 1px solid var(--color-border); font-size: 13px; transition: background var(--transition-fast); }
+.tableRow:last-child { border-bottom: none; }
+.tableRow:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+.mono { font-family: monospace; font-size: 11px; color: var(--color-text-secondary); }
+.monoSmall { font-family: monospace; font-size: 12px; font-weight: 600; }
+.custName { font-weight: 600; }
+.amount { font-weight: 700; }
+.date { font-size: 12px; color: var(--color-text-secondary); }
+.payMethod { font-size: 12px; color: var(--color-text-secondary); }
+.actions { display: flex; align-items: center; gap: 6px; }
+.payBtn { display: flex; align-items: center; gap: 4px; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); }
+.payBtn:hover { opacity: 0.85; transform: translateY(-1px); }
+.pdfBtn { background: none; border: none; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 8px; cursor: pointer; transition: all var(--transition-fast); }
+.pdfBtn:hover { color: var(--color-primary); background: rgba(var(--color-primary-rgb), 0.1); }
+.pdfBtn:disabled { opacity: 0.5; cursor: wait; }
+.refundBtn { background: none; border: 1.5px solid var(--color-border); color: var(--color-text-secondary); display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); }
+.refundBtn:hover { border-color: #9c27b0; color: #9c27b0; background: rgba(156, 39, 176, 0.06); }
+
+/* Modal */
+.modalBody { display: flex; flex-direction: column; gap: 12px; }
+.modalRow { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+.modalRow:last-of-type { border-bottom: none; }
+.modalLabel { font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.modalValue { font-size: 14px; font-weight: 600; }
+.modalNote { font-size: 12px; color: var(--color-text-secondary); margin-top: 8px; background: rgba(var(--color-primary-rgb), 0.05); padding: 10px 14px; border-radius: 10px; border-left: 3px solid var(--color-primary); }
+
+/* Confirm dialog */
+.confirmBody { display: flex; flex-direction: column; gap: 14px; }
+.confirmInfo { background: rgba(var(--color-primary-rgb), 0.05); border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.confirmInfoLabel { font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.confirmInfoValue { font-size: 14px; font-weight: 700; }
+.confirmNote { font-size: 13px; color: var(--color-text-secondary); text-align: center; }
+
+/* Result */
+.resultBox { display: flex; flex-direction: column; gap: 16px; }
+.resultSuccess { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #1a8a57; padding: 16px; background: rgba(26, 138, 87, 0.08); border-radius: 12px; }
+.resultFail { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #d32f2f; padding: 16px; background: rgba(211, 47, 47, 0.08); border-radius: 12px; }
+.resultSuccess h3, .resultFail h3 { font-size: 16px; font-weight: 700; margin: 0; }
+.resultDetails { display: flex; flex-direction: column; gap: 4px; }
+.retryNote { font-size: 12px; color: var(--color-warning, #c17b00); background: rgba(255, 181, 71, 0.1); padding: 10px 14px; border-radius: 10px; border-left: 3px solid var(--color-warning, #c17b00); margin-top: 8px; }

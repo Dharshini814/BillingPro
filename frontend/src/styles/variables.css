@@ -1,0 +1,87 @@
+:root {
+  /* Brand palette - Light Mode */
+  --color-bg: #F0F2F8;
+  --color-bg-elevated: #F6F7FB;
+  --color-primary: #D4A800;
+  --color-primary-rgb: 212, 168, 0;
+  --color-secondary: #F5C518;
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error: #FF5A5A;
+  --color-text-primary: #1B2430;
+  --color-text-secondary: #6B7280;
+  --color-border: rgba(27, 36, 48, 0.06);
+
+  /* Neumorphic shadows (light mode) */
+  --shadow-light: #FFFFFF;
+  --shadow-dark: #A3B1C6;
+  --nm-distance: 8px;
+  --nm-blur: 18px;
+
+  --shadow-raised:
+    var(--nm-distance) var(--nm-distance) var(--nm-blur) var(--shadow-dark),
+    calc(var(--nm-distance) * -1) calc(var(--nm-distance) * -1) var(--nm-blur) var(--shadow-light);
+  --shadow-raised-sm:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light);
+  --shadow-pressed:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+  --shadow-float:
+    12px 12px 32px rgba(163, 177, 198, 0.55),
+    -12px -12px 32px rgba(255, 255, 255, 0.85);
+  --shadow-glow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.18);
+
+  /* Radii */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Typography */
+  --font-display: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-base: 250ms var(--ease-out);
+  --transition-slow: 420ms var(--ease-out);
+
+  /* Layout */
+  --sidebar-width: 264px;
+  --sidebar-width-collapsed: 88px;
+  --topbar-height: 76px;
+}
+
+[data-theme='dark'] {
+  --color-bg: #16181F;
+  --color-bg-elevated: #1E2029;
+  --color-primary: #F5C518;
+  --color-primary-rgb: 245, 197, 24;
+  --color-secondary: #FFD700;
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error: #FF5A5A;
+  --color-text-primary: #EDEFF5;
+  --color-text-secondary: #9AA3B5;
+  --color-border: rgba(255, 255, 255, 0.07);
+
+  --shadow-light: #22252F;
+  --shadow-dark: #0D0F14;
+
+  --shadow-raised:
+    var(--nm-distance) var(--nm-distance) var(--nm-blur) var(--shadow-dark),
+    calc(var(--nm-distance) * -1) calc(var(--nm-distance) * -1) var(--nm-blur) var(--shadow-light);
+  --shadow-raised-sm:
+    4px 4px 10px var(--shadow-dark),
+    -4px -4px 10px var(--shadow-light);
+  --shadow-pressed:
+    inset 4px 4px 10px var(--shadow-dark),
+    inset -4px -4px 10px var(--shadow-light);
+  --shadow-float:
+    12px 12px 32px rgba(0, 0, 0, 0.6),
+    -12px -12px 32px rgba(34, 37, 47, 0.5);
+  --shadow-glow: 0 0 0 4px rgba(245, 197, 24, 0.22);
+}

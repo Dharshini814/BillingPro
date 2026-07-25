@@ -1,0 +1,42 @@
+/* Shared neumorphic primitives — imported once globally, referenced via class names
+   from CSS Modules using `composes` is avoided for portability; these are plain
+   global utility classes used alongside module classes. */
+
+.nm-surface {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.nm-surface-sm {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-raised-sm);
+}
+
+.nm-inset {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pressed);
+}
+
+.nm-float {
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+}
+
+.nm-interactive {
+  cursor: pointer;
+  user-select: none;
+}
+
+.nm-interactive:hover {
+  transform: translateY(-2px);
+}
+
+.nm-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-pressed);
+}

@@ -1,0 +1,50 @@
+.page { display: flex; flex-direction: column; gap: 22px; animation: fadeInUp 0.4s var(--ease-out) both; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.title { font-size: 26px; font-weight: 800; letter-spacing: -0.025em; }
+.subtitle { font-size: 14px; color: var(--color-text-secondary); margin-top: 3px; }
+
+.tabBar { display: flex; gap: 6px; background: var(--color-bg); box-shadow: var(--shadow-pressed); border-radius: var(--radius-pill); padding: 4px; }
+.tabBtn { padding: 8px 18px; border: none; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; color: var(--color-text-secondary); background: transparent; cursor: pointer; transition: all var(--transition-fast); }
+.tabBtnActive { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3); }
+
+.tableCard { background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); overflow: hidden; }
+
+/* Retry Queue columns: Customer | Invoice | Amount | Attempt | Scheduled | InvStatus | RetryStatus | Action */
+.retryHead, .retryRow { display: grid; grid-template-columns: 1.4fr 1.2fr 0.9fr 1.5fr 1.1fr 1fr 1fr 0.8fr 80px; align-items: center; padding: 12px 20px; gap: 12px; }
+.retryHead { font-size: 10px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(var(--color-primary-rgb), 0.04); border-bottom: 1px solid var(--color-border); }
+.retryRow { border-bottom: 1px solid var(--color-border); font-size: 13px; transition: background var(--transition-fast); }
+.retryRow:last-child { border-bottom: none; }
+.retryRow:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+
+/* Refund History columns */
+.refundHead, .refundRow { display: grid; grid-template-columns: 1.2fr 1.4fr 1.1fr 1.1fr 1.2fr 1fr 1.1fr 80px; align-items: center; padding: 12px 20px; gap: 12px; }
+.refundHead { font-size: 10px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(var(--color-primary-rgb), 0.04); border-bottom: 1px solid var(--color-border); }
+.refundRow { border-bottom: 1px solid var(--color-border); font-size: 13px; transition: background var(--transition-fast); }
+.refundRow:last-child { border-bottom: none; }
+.refundRow:hover { background: rgba(var(--color-primary-rgb), 0.03); }
+
+.mono { font-family: monospace; font-size: 11px; color: var(--color-text-secondary); }
+.custName { font-weight: 600; font-size: 13px; }
+.amount { font-weight: 700; }
+.refAmount { font-weight: 700; color: #d32f2f; }
+.refCode { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--color-primary); }
+.dateCell { font-size: 12px; color: var(--color-text-secondary); }
+.attempt { font-size: 11px; color: var(--color-text-secondary); }
+.actionCell { display: flex; align-items: center; }
+.noAction { color: var(--color-text-secondary); font-size: 12px; }
+.refundBtn { display: flex; align-items: center; gap: 4px; background: rgba(211,47,47,0.08); color: #d32f2f; border: none; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all var(--transition-fast); }
+.refundBtn:hover { background: rgba(211,47,47,0.16); }
+
+/* Refund Modal */
+.refundModalBody { display: flex; flex-direction: column; gap: 16px; }
+.refundInfoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(var(--color-primary-rgb), 0.04); border-radius: 12px; padding: 14px; }
+.refundInfoItem { display: flex; flex-direction: column; gap: 3px; }
+.rfLabel { font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.rfValue { font-size: 14px; font-weight: 700; }
+.rfField { display: flex; flex-direction: column; gap: 6px; }
+.rfInput { background: var(--color-bg); border: 1.5px solid var(--color-border); border-radius: 10px; padding: 10px 14px; font-size: 14px; color: var(--color-text); box-shadow: var(--shadow-pressed); outline: none; transition: border-color var(--transition-fast); }
+.rfInput:focus { border-color: var(--color-primary); }
+
+.iconBtn { background: none; border: none; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 8px; cursor: pointer; transition: all var(--transition-fast); }
+.iconBtn:hover { color: var(--color-primary); background: rgba(var(--color-primary-rgb), 0.08); }

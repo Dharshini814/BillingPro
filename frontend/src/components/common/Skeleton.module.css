@@ -1,0 +1,25 @@
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg) 0%,
+    var(--shadow-light) 40%,
+    var(--color-bg) 80%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  width: 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+}
+
+.card {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  padding: 24px;
+}

@@ -1,0 +1,33 @@
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-pressed);
+  margin-bottom: 30px;
+}
+
+.tab {
+  flex: 1;
+  padding: 11px 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.tab:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+.tab.active {
+  background: var(--color-bg);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-raised-sm);
+}

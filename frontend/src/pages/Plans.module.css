@@ -1,0 +1,119 @@
+.page { display: flex; flex-direction: column; gap: 28px; animation: fadeInUp 0.4s var(--ease-out) both; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.title { font-size: 26px; font-weight: 800; letter-spacing: -0.025em; }
+.subtitle { font-size: 14px; color: var(--color-text-secondary); margin-top: 3px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; }
+
+.planCard {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.planCard:hover { transform: translateY(-4px); box-shadow: var(--shadow-float); }
+
+.planHeader {
+  padding: 28px 24px 20px;
+  border-top: 4px solid;
+}
+
+.planBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.planName { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+
+.planPrice {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.priceCurrency { font-size: 20px; font-weight: 700; color: var(--color-text-secondary); padding-bottom: 4px; }
+.priceAmount { font-size: 48px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+.pricePer { font-size: 14px; color: var(--color-text-secondary); padding-bottom: 8px; }
+
+.planSubs { font-size: 12px; color: var(--color-text-secondary); }
+
+.featureList { flex: 1; padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+
+.featureItem { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; }
+
+.planActions {
+  padding: 16px 24px;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Modal form */
+.formGrid { display: flex; flex-direction: column; gap: 16px; }
+
+.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.selectLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.select {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-pressed);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236B7280'%3E%3Cpath d='M4.5 6L8 9.5 11.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  outline: none;
+}
+
+.textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-pressed);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.colorInput {
+  width: 56px;
+  height: 46px;
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-raised-sm);
+  background: var(--color-bg);
+  cursor: pointer;
+  padding: 4px;
+}

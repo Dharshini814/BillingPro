@@ -1,0 +1,143 @@
+.page { display: flex; flex-direction: column; gap: 24px; animation: fadeInUp 0.4s var(--ease-out) both; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.header { }
+.title { font-size: 26px; font-weight: 800; letter-spacing: -0.025em; }
+.subtitle { font-size: 14px; color: var(--color-text-secondary); margin-top: 3px; }
+
+/* Current plan banner */
+.currentBanner {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-left: 4px solid var(--color-primary);
+}
+.bannerLeft { display: flex; align-items: center; gap: 14px; }
+.bannerTitle { font-size: 15px; font-weight: 600; }
+.bannerSub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.usageRow { display: flex; gap: 24px; flex-wrap: wrap; }
+.usageItem { min-width: 140px; }
+.usageLabel { font-size: 11px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.usageBar { height: 6px; background: var(--shadow-dark); border-radius: var(--radius-pill); overflow: hidden; }
+.usageFill { height: 100%; border-radius: var(--radius-pill); transition: width 0.8s var(--ease-out); }
+.usageVal { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+
+/* Billing toggle */
+.billingToggle {
+  display: flex;
+  align-self: center;
+  gap: 0;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-pressed);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+}
+.toggleBtn { padding: 10px 22px; border: none; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; color: var(--color-text-secondary); background: transparent; display: flex; align-items: center; gap: 8px; transition: all var(--transition-fast); }
+.toggleActive { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3); }
+.saveBadge { background: rgba(76,175,80,0.18); color: #2e7d32; padding: 2px 7px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; }
+.toggleActive .saveBadge { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* Plan grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+
+.planCard {
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-raised);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.planCard:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); }
+
+.currentCard { box-shadow: var(--shadow-float), 0 0 0 2px var(--color-primary); }
+.popularCard { }
+
+.popularBadge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.currentBadge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #4CAF50;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.planTop { padding: 28px 24px 20px; border-top: 4px solid var(--plan-color, var(--color-primary)); }
+.planName { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+.planPrice { display: flex; align-items: flex-end; gap: 2px; }
+.currency { font-size: 18px; font-weight: 700; color: var(--color-text-secondary); padding-bottom: 4px; }
+.amount { font-size: 48px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+.per { font-size: 13px; color: var(--color-text-secondary); padding-bottom: 8px; }
+.annualNote { font-size: 12px; color: var(--color-text-secondary); margin-top: 6px; }
+
+.features { flex: 1; padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+.feature { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.4; }
+
+.planCard > button, .planCard > div > button { margin: 0 24px 24px; }
+
+.skeletonCard { height: 380px; background: var(--color-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow-raised); animation: shimmer 1.4s infinite; background: linear-gradient(90deg, var(--color-bg) 0%, var(--shadow-light) 40%, var(--color-bg) 80%); background-size: 600px 100%; }
+@keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
+
+/* Confirm modal */
+.confirmBody { }
+.planChange { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.planChip { padding: 8px 20px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 700; background: rgba(107,114,128,0.1); color: var(--color-text-secondary); }
+.arrow { font-size: 20px; color: var(--color-primary); }
+
+@media (max-width: 768px) { .currentBanner { flex-direction: column; align-items: flex-start; } }
+
+/* ── Plan Change Modal ── */
+.changeSummary { margin-top: 20px; background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-pressed); padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.changeSummaryRow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.changeSummaryRow strong { font-weight: 700; }
+.prorateHint { font-size: 12px; color: var(--color-text-secondary); border-top: 1px solid var(--color-border); padding-top: 10px; margin-top: 2px; line-height: 1.5; }
+
+/* ── Proration Card ── */
+.prorationCard { background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-pressed); padding: 18px 20px; margin-top: 16px; }
+.prorationTitle { font-size: 13px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.01em; }
+.prorationMeta { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 14px; }
+.prorationRows { display: flex; flex-direction: column; gap: 10px; }
+.prorationRow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.credit { color: #16a34a; font-weight: 700; }
+.charge { color: #d97706; font-weight: 700; }
+.prorationTotal { border-top: 1.5px solid var(--color-border); padding-top: 12px; margin-top: 4px; font-size: 15px; }
+.prorationNote { margin-top: 14px; font-size: 12px; color: var(--color-text-secondary); text-align: center; line-height: 1.5; }
+
+/* ── Plan History ── */
+.historySection { background: var(--color-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow-raised); padding: 24px; }
+.historyHeading { font-size: 15px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.01em; }
+.historyList { display: flex; flex-direction: column; gap: 0; }
+.historyRow { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--color-border); }
+.historyRow:last-child { border-bottom: none; }
+.historyDot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-primary); flex-shrink: 0; margin-top: 5px; }
+.historyBody { flex: 1; }
+.historyTitle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.historyFrom { color: var(--color-text-secondary); }
+.historyArrow { color: var(--color-primary); font-size: 16px; }
+.historyTo { color: var(--color-primary); }
+.historyMeta { font-size: 12px; color: var(--color-text-secondary); }
