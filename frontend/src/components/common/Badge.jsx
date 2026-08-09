@@ -5,6 +5,7 @@ const STATUS_MAP = {
   trialing: 'primary',
   past_due: 'warning',
   canceled: 'neutral',
+  cancelled: 'neutral',
   paused: 'neutral',
   paid: 'success',
   pending: 'warning',
@@ -14,11 +15,14 @@ const STATUS_MAP = {
   succeeded: 'success',
   failed: 'error',
   refunded: 'primary',
+  pending_approval: 'warning',
+  rejected: 'error',
+  completed: 'success',
 }
 
 export default function Badge({ status, label, variant, className = '' }) {
   const resolvedVariant = variant || STATUS_MAP[status] || 'neutral'
-  const displayLabel = label || (status ? status.replace('_', ' ') : '')
+  const displayLabel = label || (status ? status.replace(/_/g, ' ') : '')
 
   return (
     <span className={[styles.badge, styles[resolvedVariant], className].join(' ')}>

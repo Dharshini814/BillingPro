@@ -306,6 +306,13 @@
   .topbar { padding: 0 16px; }
 }
 
+@media (max-width: 400px) {
+  /* Very narrow phones: trim gaps and hide the language label so the
+     theme/notif/avatar icons never get squeezed off the edge */
+  .topbarRight { gap: 6px; }
+  .iconBtn, .topbarAvatar { width: 36px; height: 36px; }
+}
+
 .notifWrap { position: relative; }
 .roleTag {
   display: block;

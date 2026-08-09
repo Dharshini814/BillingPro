@@ -11,11 +11,11 @@ import Modal from '../components/common/Modal.jsx'
 import EmptyState from '../components/common/EmptyState.jsx'
 import Skeleton from '../components/common/Skeleton.jsx'
 import { UsersIcon, TrashIcon, PlusIcon } from '../components/common/Icons.jsx'
+import api from '../services/api'
 import styles from './Customers.module.css'
 
 const STATUS_OPTIONS = ['all', 'active', 'inactive']
 
-// Countries with their default currency
 const COUNTRY_CURRENCY_MAP = {
   "India": "INR", "United States": "USD", "United Kingdom": "GBP",
   "Germany": "EUR", "France": "EUR", "Netherlands": "EUR", "Italy": "EUR",
@@ -39,18 +39,246 @@ const inp = {
   outline: 'none', width: '100%', boxSizing: 'border-box',
 }
 
+// ── Type → color / icon for billing timeline ──
+const EVENT_STYLES = {
+  subscription:          { color: '#4CAF50', label: '🔁' },
+  subscription_cancelled:{ color: '#FF5A5A', label: '🚫' },
+  invoice:               { color: '#D4A800', label: '🧾' },
+  payment:               { color: '#4CAF50', label: '💳' },
+  refund:                { color: '#FFB547', label: '↩️' },
+}
+
+function TimelineEvent({ event }) {
+  const style = EVENT_STYLES[event.type] || { color: '#6B7280', label: '•' }
+  const isPaymentFailed = event.type === 'payment' && event.status === 'failed'
+  return (
+    <div style={{ display: 'flex', gap: 14, padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+        background: `${isPaymentFailed ? '#FF5A5A' : style.color}18`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 16,
+      }}>
+        {style.label}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontWeight: 600, fontSize: 13, color: isPaymentFailed ? '#FF5A5A' : 'var(--color-text-primary)', margin: 0 }}>
+          {event.title}
+        </p>
+        {event.meta?.amount != null && (
+          <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+            {formatCurrency(event.meta.amount)}
+            {event.meta.method ? ` · ${event.meta.method}` : ''}
+            {event.meta.plan ? ` · ${event.meta.plan}` : ''}
+          </p>
+        )}
+      </div>
+      <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', marginTop: 2 }}>
+        {event.date ? new Date(event.date).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—'}
+      </span>
+    </div>
+  )
+}
+
+function ActivityCard({ summary, loading }) {
+  const items = [
+    { label: 'Total Invoices',       value: summary?.total_invoices ?? '—',                  color: '#D4A800' },
+    { label: 'Total Paid',           value: summary ? formatCurrency(summary.total_paid) : '—', color: '#4CAF50' },
+    { label: 'Failed Payments',      value: summary?.failed_payments ?? '—',                color: '#FF5A5A' },
+    { label: 'Refunds',              value: summary?.refunds ?? '—',                        color: '#FFB547' },
+    { label: 'Active Subscriptions', value: summary?.active_subscriptions ?? '—',           color: '#4CAF50' },
+  ]
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+      {items.map(({ label, value, color }) => (
+        <div key={label} style={{
+          background: `${color}10`, border: `1px solid ${color}28`,
+          borderRadius: 12, padding: '14px 16px',
+        }}>
+          <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>{label}</p>
+          <p style={{ fontSize: 20, fontWeight: 800, color, margin: '6px 0 0' }}>
+            {loading ? '…' : value}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SubscriptionHistory({ history, loading }) {
+  if (loading) return <Skeleton height={14} width="80%" />
+  if (!history || history.changes?.length === 0) {
+    return <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>No plan change history recorded yet.</p>
+  }
+  return (
+    <div>
+      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 10 }}>
+        Current Plan: <span style={{ color: '#D4A800' }}>{history.current_plan}</span>
+        &nbsp;·&nbsp;Status: <span style={{ textTransform: 'capitalize' }}>{history.current_status}</span>
+      </p>
+      {history.changes.map((c, i) => (
+        <div key={i} style={{
+          display: 'flex', gap: 12, padding: '10px 0',
+          borderBottom: '1px solid var(--color-border)',
+          fontSize: 13,
+        }}>
+          <span style={{ color: 'var(--color-text-secondary)', minWidth: 90, fontSize: 11 }}>
+            {c.date ? new Date(c.date).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) : '—'}
+          </span>
+          <span style={{ flex: 1, color: 'var(--color-text-primary)', fontWeight: 500 }}>
+            {c.description || c.action}
+          </span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>{c.performed_by}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Customer Detail Modal ──
+function CustomerDetailModal({ customer, onClose }) {
+  const [activeTab, setActiveTab]   = useState('timeline')
+  const [timeline,  setTimeline]    = useState(null)
+  const [summary,   setSummary]     = useState(null)
+  const [subHistory, setSubHistory] = useState(null)
+  const [tLoading,  setTLoading]    = useState(true)
+  const [sLoading,  setSLoading]    = useState(true)
+  const [hLoading,  setHLoading]    = useState(true)
+
+  const AVATAR_COLORS = ['#D4A800', '#F5C518', '#4CAF50', '#FFB547', '#FF5A5A']
+  const avatarColor = AVATAR_COLORS[customer.id % AVATAR_COLORS.length]
+
+  useEffect(() => {
+    if (!customer) return
+
+    // Load billing history
+    api.get(`/customers/${customer.id}/billing-history`)
+      .then(r => setTimeline(r.data))
+      .finally(() => setTLoading(false))
+
+    // Load activity summary
+    api.get(`/customers/${customer.id}/activity-summary`)
+      .then(r => setSummary(r.data))
+      .finally(() => setSLoading(false))
+  }, [customer])
+
+  // Load subscription history lazily when tab is opened
+  useEffect(() => {
+    if (activeTab !== 'subscriptions' || subHistory !== null) return
+    // Find first subscription from timeline to get id, or try customer's subscriptions endpoint
+    api.get(`/subscriptions/`, { params: { customer_id: customer.id, pageSize: 50 } })
+      .then(async r => {
+        const subs = r.data?.items || []
+        if (subs.length === 0) { setSubHistory({ changes: [] }); return }
+        // Load history for first (most recent) subscription
+        const latestSub = subs[0]
+        const hr = await api.get(`/subscriptions/${latestSub.id}/history`)
+        setSubHistory(hr.data)
+      })
+      .catch(() => setSubHistory({ changes: [] }))
+      .finally(() => setHLoading(false))
+  }, [activeTab, customer, subHistory])
+
+  const TABS = [
+    { key: 'timeline',      label: 'Billing Timeline' },
+    { key: 'activity',      label: 'Activity Summary' },
+    { key: 'subscriptions', label: 'Subscription History' },
+  ]
+
+  const tabBtn = (key, label) => (
+    <button
+      key={key}
+      onClick={() => setActiveTab(key)}
+      style={{
+        padding: '8px 16px', border: 'none', borderRadius: 99,
+        fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        background: activeTab === key ? '#D4A800' : 'transparent',
+        color: activeTab === key ? '#fff' : 'var(--color-text-secondary)',
+        transition: 'all 0.18s',
+      }}
+    >
+      {label}
+    </button>
+  )
+
+  return (
+    <Modal
+      isOpen={!!customer}
+      onClose={onClose}
+      title=""
+      width={680}
+      footer={<Button variant="ghost" onClick={onClose}>Close</Button>}
+    >
+      {/* Customer Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%', background: avatarColor,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontWeight: 800, fontSize: 18, flexShrink: 0,
+        }}>
+          {getInitials(customer.name)}
+        </div>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{customer.name}</h2>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {customer.email} · {customer.company || 'No company'} · {customer.country || 'India'}
+          </p>
+        </div>
+        <Badge status={customer.status?.toLowerCase()} style={{ marginLeft: 'auto' }} />
+      </div>
+
+      {/* Tabs */}
+      <div style={{
+        display: 'flex', gap: 4, background: 'var(--color-bg)',
+        boxShadow: 'var(--shadow-pressed)', borderRadius: 99,
+        padding: 4, marginBottom: 20, width: 'fit-content',
+      }}>
+        {TABS.map(t => tabBtn(t.key, t.label))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'timeline' && (
+        <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
+          {tLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: 14, padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
+                <Skeleton height={36} width={36} borderRadius={99} />
+                <div style={{ flex: 1 }}><Skeleton height={13} width="70%" /><Skeleton height={11} width="40%" /></div>
+              </div>
+            ))
+          ) : !timeline?.events?.length ? (
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: 13, padding: '20px 0' }}>No billing events found for this customer.</p>
+          ) : (
+            timeline.events.map((event, i) => <TimelineEvent key={i} event={event} />)
+          )}
+        </div>
+      )}
+
+      {activeTab === 'activity' && (
+        <ActivityCard summary={summary} loading={sLoading} />
+      )}
+
+      {activeTab === 'subscriptions' && (
+        <SubscriptionHistory history={subHistory} loading={hLoading} />
+      )}
+    </Modal>
+  )
+}
+
+// ── Main Customers Page ──
 export default function Customers() {
   const toast = useToast()
-  const [items, setItems]         = useState([])
-  const [total, setTotal]         = useState(0)
-  const [page, setPage]           = useState(1)
-  const [search, setSearch]       = useState('')
-  const [status, setStatus]       = useState('all')
-  const [loading, setLoading]     = useState(true)
+  const [items, setItems]               = useState([])
+  const [total, setTotal]               = useState(0)
+  const [page, setPage]                 = useState(1)
+  const [search, setSearch]             = useState('')
+  const [status, setStatus]             = useState('all')
+  const [loading, setLoading]           = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [showAdd, setShowAdd]     = useState(false)
-  const [form, setForm]           = useState(EMPTY_FORM)
-  const [saving, setSaving]       = useState(false)
+  const [showAdd, setShowAdd]           = useState(false)
+  const [detailCustomer, setDetailCustomer] = useState(null)
+  const [form, setForm]                 = useState(EMPTY_FORM)
+  const [saving, setSaving]             = useState(false)
   const debouncedSearch = useDebounce(search, 350)
 
   const load = useCallback(async () => {
@@ -83,10 +311,7 @@ export default function Customers() {
   function setField(k, v) {
     setForm(f => {
       const next = { ...f, [k]: v }
-      // auto-update currency when country changes
-      if (k === 'country') {
-        next.currency = COUNTRY_CURRENCY_MAP[v] || 'USD'
-      }
+      if (k === 'country') next.currency = COUNTRY_CURRENCY_MAP[v] || 'USD'
       return next
     })
   }
@@ -153,7 +378,7 @@ export default function Customers() {
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className={styles.tableRow}>
-              {Array.from({length:7}).map((_,j)=><Skeleton key={j} height={14} width="70%" />)}
+              {Array.from({length:8}).map((_,j)=><Skeleton key={j} height={14} width="70%" />)}
             </div>
           ))
         ) : (items?.length || 0) === 0 ? (
@@ -162,11 +387,22 @@ export default function Customers() {
           items?.map((c, i) => (
             <div key={c.id} className={styles.tableRow}>
               <div className={styles.customerCell}>
-                <div className={styles.avatar} style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                <div
+                  className={styles.avatar}
+                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length], cursor: 'pointer' }}
+                  onClick={() => setDetailCustomer(c)}
+                  title="View billing history"
+                >
                   {getInitials(c.name)}
                 </div>
                 <div>
-                  <p className={styles.custName}>{c.name}</p>
+                  <p
+                    className={styles.custName}
+                    style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                    onClick={() => setDetailCustomer(c)}
+                  >
+                    {c.name}
+                  </p>
                   <p className={styles.custEmail}>{c.email}</p>
                 </div>
               </div>
@@ -178,15 +414,33 @@ export default function Customers() {
               </span>
               <Badge status={c.status?.toLowerCase()} />
               <span className={styles.date}>{formatDate(c.joined)}</span>
-              <button className={styles.deleteBtn} onClick={() => setDeleteTarget(c)} title="Remove customer">
-                <TrashIcon size={15} />
-              </button>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => setDetailCustomer(c)}
+                  title="View billing history"
+                  style={{ color: '#D4A800' }}
+                >
+                  👁
+                </button>
+                <button className={styles.deleteBtn} onClick={() => setDeleteTarget(c)} title="Remove customer">
+                  <TrashIcon size={15} />
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
 
       <Pagination page={page} pageSize={8} total={total} onChange={setPage} />
+
+      {/* ── Customer Detail Modal (Billing Timeline + Activity Summary + Sub History) ── */}
+      {detailCustomer && (
+        <CustomerDetailModal
+          customer={detailCustomer}
+          onClose={() => setDetailCustomer(null)}
+        />
+      )}
 
       {/* ── Add Customer Modal ── */}
       <Modal
@@ -212,7 +466,6 @@ export default function Customers() {
               <input style={inp} type="email" value={form.email} onChange={e=>setField('email',e.target.value)} placeholder="jane@company.com" />
             </div>
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
               <label style={{ fontSize:11, fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Company</label>
@@ -223,12 +476,10 @@ export default function Customers() {
               <input style={inp} value={form.phone} onChange={e=>setField('phone',e.target.value)} placeholder="+91 98765 43210" />
             </div>
           </div>
-
           <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
             <label style={{ fontSize:11, fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Address</label>
             <input style={inp} value={form.address} onChange={e=>setField('address',e.target.value)} placeholder="123 Main Street, City" />
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
               <label style={{ fontSize:11, fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Country</label>
@@ -243,7 +494,6 @@ export default function Customers() {
               <input style={{...inp, background:'rgba(var(--color-primary-rgb),0.04)', color:'var(--color-text-secondary)'}} value={form.currency} readOnly />
             </div>
           </div>
-
           <div style={{ background:'rgba(var(--color-primary-rgb),0.05)', borderRadius:10, padding:'10px 14px', fontSize:12, color:'var(--color-text-secondary)', borderLeft:'3px solid var(--color-primary)' }}>
             Tax will be auto-calculated based on country: <strong>India → GST 18%</strong>, USA → Sales Tax 10%, UK → VAT 20%, UAE → VAT 5%, etc.
           </div>

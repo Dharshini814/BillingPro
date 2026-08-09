@@ -9,35 +9,152 @@ import Pagination from '../components/common/Pagination.jsx'
 import Skeleton from '../components/common/Skeleton.jsx'
 import EmptyState from '../components/common/EmptyState.jsx'
 import Modal from '../components/common/Modal.jsx'
+import api from '../services/api.js'
 import { RefreshIcon, XIcon, CheckIcon, LayersIcon } from '../components/common/Icons.jsx'
 import styles from './Subscriptions.module.css'
 
 const STATUSES = ['all', 'active', 'trialing', 'past_due', 'canceled']
 
-// ─── Proration Summary Card ───────────────────────────────────────────────────
+// ─── Full Proration Summary Card (upgrade + downgrade + wallet) ───────────────
 function ProrationSummary({ preview }) {
   if (!preview) return null
+  const isDowngrade = preview.isDowngrade
   return (
     <div className={styles.prorationCard}>
-      <h4 className={styles.prorationTitle}>Plan Upgrade Summary</h4>
+      <h4 className={styles.prorationTitle}>
+        {isDowngrade ? 'Plan Downgrade Summary' : 'Plan Upgrade Summary'}
+      </h4>
+      <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
+        {preview.remainingDays} days remaining in billing cycle
+      </p>
       <div className={styles.prorationRows}>
         <div className={styles.prorationRow}>
-          <span>Unused {preview.currentPlan?.name} Credit</span>
+          <span>Unused {preview.currentPlan?.name} credit</span>
           <span className={styles.credit}>−{formatCurrency(preview.credit)}</span>
         </div>
         <div className={styles.prorationRow}>
-          <span>{preview.newPlan?.name} Charge ({preview.remainingDays} days)</span>
+          <span>{preview.newPlan?.name} charge ({preview.remainingDays} days)</span>
           <span className={styles.charge}>+{formatCurrency(preview.charge)}</span>
         </div>
+
+        {/* Wallet credit applied (upgrades only) */}
+        {!isDowngrade && preview.walletApplied > 0 && (
+          <div className={styles.prorationRow}>
+            <span>💰 Wallet credit applied</span>
+            <span className={styles.credit}>−{formatCurrency(preview.walletApplied)}</span>
+          </div>
+        )}
+
         <div className={[styles.prorationRow, styles.prorationTotal].join(' ')}>
-          <span>Amount Due</span>
-          <span>{formatCurrency(preview.amountDue)}</span>
+          <strong>{isDowngrade ? 'Credit Added to Wallet' : 'Amount Due'}</strong>
+          <strong className={isDowngrade ? styles.credit : ''}>
+            {isDowngrade
+              ? `+${formatCurrency(preview.walletCreditAdded)}`
+              : formatCurrency(preview.amountDue)}
+          </strong>
         </div>
       </div>
+
       <p className={styles.prorationNote}>
-        A proration invoice will be created for the amount due.
+        {isDowngrade
+          ? `${formatCurrency(preview.walletCreditAdded)} will be added to the customer's wallet.`
+          : preview.amountDue === 0
+            ? '✅ Wallet balance fully covers this upgrade — no charge.'
+            : `A proration invoice of ${formatCurrency(preview.amountDue)} will be created.${
+                preview.walletApplied > 0 ? ` Wallet saved ${formatCurrency(preview.walletApplied)}.` : ''
+              }`
+        }
       </p>
     </div>
+  )
+}
+
+// ─── Subscription History Modal ───────────────────────────────────────────────
+function HistoryModal({ sub, onClose }) {
+  const [loading, setLoading] = useState(true)
+  const [historyData, setHistoryData] = useState(null)
+
+  useEffect(() => {
+    api.get(`/subscriptions/${sub.id}/history`)
+      .then(({ data }) => setHistoryData(data))
+      .catch(() => setHistoryData({ changes: [], current_plan: sub.plan, current_status: sub.status }))
+      .finally(() => setLoading(false))
+  }, [sub.id, sub.plan, sub.status])
+
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`Plan History — ${sub.customerName}`}
+      width={520}
+      footer={<Button variant="ghost" onClick={onClose}>Close</Button>}
+    >
+      {loading ? (
+        <div style={{ padding: '20px 0' }}>
+          {[1, 2, 3].map(n => <Skeleton key={n} height={48} style={{ marginBottom: 8 }} />)}
+        </div>
+      ) : (
+        <div>
+          {/* Summary row */}
+          <div style={{
+            display: 'flex', gap: 16, marginBottom: 20,
+            padding: '10px 14px', borderRadius: 8,
+            background: 'var(--color-surface-secondary, rgba(255,255,255,0.04))',
+            fontSize: 13
+          }}>
+            <span><strong>Current Plan:</strong> {historyData?.current_plan || sub.plan}</span>
+            <span><strong>Status:</strong> {historyData?.current_status || sub.status}</span>
+            <span><strong>Changes:</strong> {historyData?.total_changes || 0}</span>
+          </div>
+
+          {/* Change timeline */}
+          {(!historyData?.changes || historyData.changes.length === 0) ? (
+            <EmptyState
+              icon={<RefreshIcon size={22} />}
+              title="No plan changes"
+              description="No plan changes have been recorded for this subscription."
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {historyData.changes.map((entry, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  padding: '10px 12px', borderRadius: 8,
+                  border: '1px solid var(--color-border, rgba(255,255,255,0.08))'
+                }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%', marginTop: 5, flexShrink: 0,
+                    background: entry.action === 'plan_changed' ? '#4CAF50' : '#5B7CFA'
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      {(() => {
+                        const oldV = entry.old_value || {}
+                        const newV = entry.new_value || {}
+                        const oldPlan = (typeof oldV === 'object' ? oldV.plan_name : null) || String(oldV || '')
+                        const newPlan = (typeof newV === 'object' ? newV.plan_name : null) || String(newV || '')
+                        if (oldPlan && newPlan && oldPlan !== newPlan) return `${oldPlan} → ${newPlan}`
+                        if (newPlan) return newPlan
+                        return entry.action || entry.description || 'Plan change'
+                      })()}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                      {entry.date ? formatDate(entry.date) : '—'}
+                      {entry.performed_by && ` · by ${entry.performed_by}`}
+                    </p>
+                    {entry.description && (
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                        {entry.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
 
@@ -106,7 +223,7 @@ function ChangePlanModal({ sub, plans, onClose, onSuccess }) {
           <>
             <Button variant="ghost" onClick={() => { setStep('select'); setPreview(null) }}>Back</Button>
             <Button variant="primary" loading={confirming} onClick={handleConfirm}>
-              Confirm Upgrade
+              {preview?.isDowngrade ? 'Confirm Downgrade' : 'Confirm Upgrade'}
             </Button>
           </>
         )
@@ -174,6 +291,7 @@ export default function Subscriptions() {
   const [plans, setPlans] = useState([])
   const [actionTarget, setActionTarget] = useState(null)   // { sub, action: 'active' | 'canceled' }
   const [changePlanTarget, setChangePlanTarget] = useState(null)  // sub
+  const [historyTarget, setHistoryTarget] = useState(null)  // sub
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -239,6 +357,7 @@ export default function Subscriptions() {
           <span>Next Billing</span>
           <span>Status</span>
           <span>Actions</span>
+          <span>History</span>
         </div>
 
         {loading ? (
@@ -304,6 +423,18 @@ export default function Subscriptions() {
                   </button>
                 )}
               </div>
+
+              {/* History button — new column */}
+              <div>
+                <button
+                  className={styles.iconBtn}
+                  title="View Plan Change History"
+                  onClick={() => setHistoryTarget(sub)}
+                >
+                  <RefreshIcon size={13} />
+                  <span>History</span>
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -343,6 +474,14 @@ export default function Subscriptions() {
           plans={plans}
           onClose={() => setChangePlanTarget(null)}
           onSuccess={() => { setChangePlanTarget(null); load() }}
+        />
+      )}
+
+      {/* Subscription History modal */}
+      {historyTarget && (
+        <HistoryModal
+          sub={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </div>

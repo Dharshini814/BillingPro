@@ -15,7 +15,8 @@
     "myInvoices": "Mes factures",
     "myPayments": "Mes paiements",
     "support": "Support",
-    "failedPayments": "Paiements Échoués"
+    "failedPayments": "Paiements Échoués",
+    "myWallet": "Wallet & Refunds"
   },
   "auth": {
     "signIn": "Se connecter",

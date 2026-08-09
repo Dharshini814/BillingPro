@@ -15,7 +15,8 @@
     "myInvoices": "請求書",
     "myPayments": "支払い履歴",
     "support": "サポート",
-    "failedPayments": "失敗した支払い"
+    "failedPayments": "失敗した支払い",
+    "myWallet": "Wallet & Refunds"
   },
   "auth": {
     "signIn": "サインイン",

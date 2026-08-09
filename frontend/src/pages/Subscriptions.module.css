@@ -12,7 +12,7 @@
 
 .tableCard { background: var(--color-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); overflow: auto; min-width: 0; }
 
-.tableHead, .tableRow { display: grid; grid-template-columns: 50px 1.6fr 1fr 1fr 1.1fr 110px 200px; align-items: center; padding: 12px 20px; gap: 12px; }
+.tableHead, .tableRow { display: grid; grid-template-columns: 50px 1.6fr 1fr 1fr 1.1fr 110px 200px 100px; align-items: center; padding: 12px 20px; gap: 12px; }
 
 .tableHead { font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(var(--color-primary-rgb), 0.04); border-bottom: 1px solid var(--color-border); }
 
@@ -86,4 +86,9 @@
   background: rgba(255,90,90,0.08);
   color: #FF5A5A;
   border-color: rgba(255,90,90,0.3);
+}
+
+/* Responsive: ensure the table scrolls horizontally instead of squishing on narrow screens */
+@media (max-width: 900px) {
+  .tableHead, .tableRow { min-width: 820px; }
 }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, JSON
+from sqlalchemy import Column, Integer, String, Float, JSON, Boolean
 from app.database import Base
 
 
@@ -19,3 +19,7 @@ class Plan(Base):
     trial_days = Column(Integer, default=0)
 
     features = Column(JSON, nullable=True)
+
+    # Soft-archive flag — archived plans are hidden from plan selection
+    # but preserved in DB so existing subscriptions keep their FK intact
+    is_active = Column(Boolean, nullable=False, default=True)

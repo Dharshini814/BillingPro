@@ -70,6 +70,12 @@ class Invoice(Base):
         nullable=True
     )
 
+    # Invoice type: 'regular', 'prorated_upgrade', 'prorated_downgrade'
+    invoice_type = Column(String(30), nullable=True, default="regular")
+
+    # Human-readable note shown on invoice (e.g. proration details, wallet credit)
+    notes = Column(String, nullable=True)
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()

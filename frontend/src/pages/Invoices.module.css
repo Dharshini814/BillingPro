@@ -50,3 +50,9 @@
   .tableHead span:nth-child(5), .tableRow span:nth-child(5),
   .tableHead span:nth-child(7), .tableRow span:nth-child(7) { display: none; }
 }
+
+/* Responsive: scroll the table horizontally instead of squishing on narrow screens */
+@media (max-width: 900px) {
+  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tableHead, .tableRow { min-width: 860px; }
+}

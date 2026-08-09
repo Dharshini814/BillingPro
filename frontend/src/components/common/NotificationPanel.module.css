@@ -3,12 +3,18 @@
   top: calc(100% + 10px);
   right: 0;
   width: 340px;
+  max-width: calc(100vw - 32px);
   background: var(--color-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-float);
   z-index: 300;
   animation: fadeDown 0.25s var(--ease-out);
   overflow: hidden;
+}
+
+@media (max-width: 420px) {
+  /* Pin to the screen edges on small phones instead of overflowing past them */
+  .panel { position: fixed; top: var(--topbar-height); right: 8px; left: 8px; width: auto; max-width: none; }
 }
 
 @keyframes fadeDown {

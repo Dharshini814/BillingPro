@@ -50,8 +50,9 @@ def process_payment(
     payload: Any = Body(...),
     db: Session = Depends(get_db)
 ):
-    invoice_id = payload.get("invoice_id")
-    amount = payload.get("amount")
+    invoice_id     = payload.get("invoice_id")
+    amount         = payload.get("amount")
+    payment_method = payload.get("payment_method", "card")   # ← accepts upi, card, bank_transfer etc.
 
     if not invoice_id or amount is None:
         raise HTTPException(status_code=400, detail="invoice_id and amount are required")
@@ -69,12 +70,12 @@ def process_payment(
     if invoice.status == "paid":
         raise HTTPException(status_code=400, detail="Invoice is already paid")
 
-    # 80% success, 20% failure
+    # 80% success / 20% failure simulation
     success = random.random() < 0.80
 
-    txn_id = f"TXN{uuid.uuid4().hex[:8].upper()}"
+    txn_id  = f"TXN{uuid.uuid4().hex[:8].upper()}"
     pay_ref = f"PAY-{uuid.uuid4().hex[:8].upper()}"
-    now = datetime.now(timezone.utc)
+    now     = datetime.now(timezone.utc)
 
     # Find existing pending payment for this invoice, update it instead of creating duplicate
     payment = db.query(Payment).filter(
@@ -83,19 +84,19 @@ def process_payment(
     ).order_by(Payment.id.desc()).first()
 
     if payment:
-        payment.status = "paid" if success else "failed"
-        payment.payment_method = "card"
+        payment.status         = "paid" if success else "failed"
+        payment.payment_method = payment_method
         payment.payment_reference = pay_ref
-        payment.payment_date = now if success else payment.payment_date
+        payment.payment_date   = now if success else payment.payment_date
         db.flush()
     else:
         payment = Payment(
-            invoice_id=invoice_id,
-            payment_reference=pay_ref,
-            amount=float(amount),
-            payment_method="card",
-            status="paid" if success else "failed",
-            payment_date=now if success else None
+            invoice_id        = invoice_id,
+            payment_reference = pay_ref,
+            amount            = float(amount),
+            payment_method    = payment_method,
+            status            = "paid" if success else "failed",
+            payment_date      = now if success else None
         )
         db.add(payment)
         db.flush()
@@ -117,11 +118,12 @@ def process_payment(
         entity_id=payment.id,
         action="PROCESS",
         module="Payments",
-        description=f"Payment processed for Invoice #{invoice_id} - {'SUCCESS' if success else 'FAILED'}",
+        description=f"Payment processed for Invoice #{invoice_id} via {payment_method.upper()} - {'SUCCESS' if success else 'FAILED'}",
         new_value={
             "invoice_id": invoice_id,
             "amount": float(amount),
             "status": payment.status,
+            "payment_method": payment_method,
             "transaction_id": txn_id
         }
     ))

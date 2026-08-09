@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.payment import Payment
 from app.models.invoice import Invoice
 from app.models.audit_log import AuditLog
+from app.models.payment_retry import PaymentRetry
 
 
 router = APIRouter(
@@ -40,15 +41,18 @@ def to_camel(p: Payment) -> dict:
 
         "amount": p.amount,
 
-        # show invoice status
+        # invoice status (for display)
         "status":
             p.invoice.status
             if p.invoice
             else p.status,
 
+        # actual payment row status (for Pay/Refund button logic)
+        "paymentStatus": p.status,
 
-        "paymentStatus":
-            p.status,
+        "dueDate":
+            p.invoice.due_date.isoformat()
+            if p.invoice and p.invoice.due_date else None,
 
 
         "processedAt":
@@ -145,6 +149,66 @@ def get_payments(
 # ==========================
 # GET PAYMENT BY ID
 # ==========================
+
+@router.get("/failed")
+def get_failed_payments(
+    page: int = Query(1, ge=1),
+    pageSize: int = Query(20),
+    db: Session = Depends(get_db)
+):
+    """
+    Failed Payment Queue — only payments where:
+    - payment.status = 'failed'  AND
+    - invoice is still unpaid/draft/failed (not yet recovered)
+    """
+    q = (
+        db.query(Payment)
+        .options(
+            joinedload(Payment.invoice)
+            .joinedload(Invoice.customer)
+        )
+        .join(Invoice, Payment.invoice_id == Invoice.id)
+        .filter(
+            Payment.status == "failed",
+            Invoice.status.in_(["unpaid", "draft", "failed", "overdue"])
+        )
+        .order_by(Payment.id.desc())
+    )
+
+    total = q.count()
+    payments = q.offset((page - 1) * pageSize).limit(pageSize).all()
+
+    items = []
+    for p in payments:
+        retries = (
+            db.query(PaymentRetry)
+            .filter(PaymentRetry.payment_id == p.id)
+            .order_by(PaymentRetry.attempt_number.desc())
+            .all()
+        )
+        attempt_number = retries[0].attempt_number if retries else 0
+        next_retry = retries[0].scheduled_date.isoformat() if retries and retries[0].status == "pending" else None
+
+        customer_name = p.invoice.customer.name if p.invoice and p.invoice.customer else ""
+
+        items.append({
+            "id":            p.id,
+            "customerName":  customer_name,
+            "invoiceNumber": p.invoice.invoice_number if p.invoice else None,
+            "invoiceId":     p.invoice_id,
+            "invoiceStatus": p.invoice.status if p.invoice else None,
+            "amount":        p.amount,
+            "method":        p.payment_method,
+            "status":        p.status,          # always "failed"
+            "paymentStatus": p.status,
+            "reference":     p.payment_reference,
+            "attemptNumber": attempt_number,
+            "nextRetryDate": next_retry,
+            "createdAt":     p.created_at.isoformat() if p.created_at else None,
+        })
+
+    return {"items": items, "total": total, "page": page, "pageSize": pageSize}
+
 
 @router.get("/{payment_id}")
 def get_payment(

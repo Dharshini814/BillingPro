@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -18,6 +18,9 @@ class Customer(Base):
     # Country & currency for tax calculation
     country = Column(String(100), nullable=True, default="India")
     currency = Column(String(10), nullable=True, default="INR")
+
+    # Wallet: stores prorated credits from plan downgrades
+    wallet_balance = Column(Float, nullable=False, default=0.0)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

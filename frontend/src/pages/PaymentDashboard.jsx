@@ -14,11 +14,12 @@ import api from '../services/api.js'
 
 const STATUSES = ['all', 'unpaid', 'paid', 'failed', 'refunded']
 
-const PAYMENT_METHODS = ['UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Bank Transfer', 'Cash', 'Wallet']
-
-function randomPaymentMethod(seed) {
-  // Deterministic by invoice id so it doesn't change on re-render
-  return PAYMENT_METHODS[seed % PAYMENT_METHODS.length]
+function resolvePaymentMethod(inv) {
+  // Use the actual payment_method stored on the invoice/payment record
+  if (inv.paymentMethod) return inv.paymentMethod
+  if (inv.payment_method) return inv.payment_method
+  // Fallback only for paid invoices with no recorded method
+  return inv.status === 'paid' ? 'Card' : '—'
 }
 
 export default function PaymentDashboard() {
@@ -33,6 +34,7 @@ export default function PaymentDashboard() {
   const [processTarget, setProcessTarget] = useState(null)
   const [processing, setProcessing]       = useState(false)
   const [processResult, setProcessResult] = useState(null)
+  const [selectedMethod, setSelectedMethod] = useState('UPI')
 
   // Refund confirmation modal
   const [refundTarget, setRefundTarget] = useState(null)
@@ -67,7 +69,8 @@ export default function PaymentDashboard() {
     try {
       const { data } = await api.post('/payments/process', {
         invoice_id: processTarget.id,
-        amount: processTarget.amount
+        amount: processTarget.amount,
+        payment_method: selectedMethod,
       })
       setProcessResult(data)
       toast.push({ type: data.success ? 'success' : 'error', message: data.message })
@@ -130,6 +133,7 @@ export default function PaymentDashboard() {
   function closeProcessModal() {
     setProcessTarget(null)
     setProcessResult(null)
+    setSelectedMethod('UPI')
   }
 
   return (
@@ -188,7 +192,7 @@ export default function PaymentDashboard() {
               <span className={styles.amount}>{formatCurrency(inv.amount)}</span>
               <span className={styles.date}>{formatDate(inv.dueAt)}</span>
               <span className={styles.payMethod}>
-                {inv.status === 'paid' ? randomPaymentMethod(inv.id) : '—'}
+                {resolvePaymentMethod(inv)}
               </span>
               <Badge status={inv.status} />
               <div className={styles.actions}>
@@ -261,7 +265,7 @@ export default function PaymentDashboard() {
             </div>
             {[
               { label: 'Customer', value: viewing.customerName || '—' },
-              { label: 'Payment Method', value: viewing.status === 'paid' ? randomPaymentMethod(viewing.id) : '—' },
+              { label: 'Payment Method', value: resolvePaymentMethod(viewing) },
               { label: 'Due Date', value: formatDate(viewing.dueAt) },
             ].map(({ label, value }) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--color-border)' }}>
@@ -312,8 +316,39 @@ export default function PaymentDashboard() {
               <span className={styles.modalLabel}>Amount</span>
               <span className={styles.modalValue}>{formatCurrency(processTarget?.amount)}</span>
             </div>
-            <p className={styles.modalNote}>
-              Payment will be processed through the mock gateway (80% success / 20% failure).
+
+            {/* Payment Method Selector */}
+            <div style={{ marginTop: 16 }}>
+              <p className={styles.modalLabel} style={{ marginBottom: 10 }}>Payment Method</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['UPI', 'Credit Card', 'Wallet'].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setSelectedMethod(m)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 8,
+                      border: selectedMethod === m
+                        ? '2px solid var(--color-primary)'
+                        : '1.5px solid var(--color-border)',
+                      background: selectedMethod === m
+                        ? 'rgba(var(--color-primary-rgb),0.08)'
+                        : 'transparent',
+                      color: selectedMethod === m ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                      fontWeight: selectedMethod === m ? 700 : 500,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {m === 'UPI' ? '📱 UPI' : m === 'Credit Card' ? '💳 Credit Card' : '💰 Wallet'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className={styles.modalNote} style={{ marginTop: 14 }}>
+              Confirm manual payment via <strong>{selectedMethod}</strong> for this invoice.
             </p>
           </div>
         ) : (
@@ -379,7 +414,7 @@ export default function PaymentDashboard() {
             <div>
               <div className={styles.confirmInfoLabel}>Payment Method</div>
               <div className={styles.confirmInfoValue}>
-                {refundTarget ? randomPaymentMethod(refundTarget.id) : '—'}
+                {refundTarget ? resolvePaymentMethod(refundTarget) : '—'}
               </div>
             </div>
           </div>

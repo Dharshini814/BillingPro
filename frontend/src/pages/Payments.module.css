@@ -24,3 +24,10 @@
 .userTableRow {
   grid-template-columns: 1.4fr 1.6fr 1fr 1.4fr 1fr 80px;
 }
+
+/* Responsive: scroll tables horizontally instead of squishing on narrow screens */
+@media (max-width: 860px) {
+  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tableHead, .tableRow { min-width: 760px; }
+  .userTableHead, .userTableRow { min-width: 680px; }
+}

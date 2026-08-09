@@ -20,7 +20,7 @@ export default function Plans() {
   const [editPlan, setEditPlan] = useState(null)
   const [form, setForm] = useState(EMPTY_PLAN)
   const [saving, setSaving] = useState(false)
-  const [deleteId, setDeleteId] = useState(null)
+  const [archiveId, setArchiveId] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -68,11 +68,11 @@ export default function Plans() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleArchive(id) {
     try {
-      await planService.remove(id)
-      setDeleteId(null)
-      toast.push({ type: 'success', message: 'Plan deleted.' })
+      await planService.archive(id)
+      setArchiveId(null)
+      toast.push({ type: 'success', message: 'Plan archived. It is now hidden from plan selection.' })
       load()
     } catch (err) {
       toast.push({ type: 'error', message: err.message })
@@ -123,8 +123,8 @@ export default function Plans() {
                 <Button size="sm" onClick={() => openEdit(plan)}>
                   <EditIcon size={14} /> Edit
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => setDeleteId(plan.id)}>
-                  <TrashIcon size={14} /> Delete
+                <Button size="sm" variant="danger" onClick={() => setArchiveId(plan.id)}>
+                  <TrashIcon size={14} /> Archive
                 </Button>
               </div>
             </div>
@@ -167,17 +167,17 @@ export default function Plans() {
         </div>
       </Modal>
 
-      {/* Delete Confirm */}
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Plan" width={380}
+      {/* Archive Confirm */}
+      <Modal isOpen={!!archiveId} onClose={() => setArchiveId(null)} title="Archive Plan" width={380}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="danger" onClick={() => handleDelete(deleteId)}>Delete</Button>
+            <Button variant="ghost" onClick={() => setArchiveId(null)}>Cancel</Button>
+            <Button variant="danger" onClick={() => handleArchive(archiveId)}>Archive Plan</Button>
           </>
         }
       >
         <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>
-          This plan will be permanently deleted. Existing subscribers won't be affected immediately, but no new subscriptions can be created under it.
+          This plan will be archived and hidden from plan selection. Existing subscribers keep their current plan unaffected. You can un-archive it later from the database if needed.
         </p>
       </Modal>
     </div>

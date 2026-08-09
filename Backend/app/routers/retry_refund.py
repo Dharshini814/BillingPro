@@ -1,9 +1,14 @@
 """
 Task 4: Failed Payment Retry & Refund Management
-GET  /payment-retries/         – List failed payment queue
-POST /payment-retries/run      – Trigger retry processing
-POST /refunds                  – Issue a refund
-GET  /refunds                  – List refund history
+
+GET  /payment-retries/            – List failed payment queue
+POST /payment-retries/run         – Trigger retry processing
+POST /refunds/request             – User requests a refund (status=pending_approval)
+POST /refunds                     – Admin directly issues a refund (status=completed)
+GET  /refunds                     – List refund history (supports ?status= filter)
+GET  /refunds/{refund_id}         – Get single refund
+PATCH /refunds/{refund_id}/approve – Admin approves a pending refund
+PATCH /refunds/{refund_id}/reject  – Admin rejects a pending refund
 """
 
 import random
@@ -119,7 +124,6 @@ def run_retries(db: Session = Depends(get_db)):
     for retry in due_retries:
         retry.attempted_at = datetime.utcnow()
 
-        # Simulate 80/20
         success = random.random() < 0.80
 
         invoice = retry.invoice
@@ -132,7 +136,6 @@ def run_retries(db: Session = Depends(get_db)):
         if success:
             retry.status = "success"
 
-            # Create a new successful payment record
             new_pay = Payment(
                 invoice_id=retry.invoice_id,
                 payment_reference=f"RETRY-{uuid.uuid4().hex[:8].upper()}",
@@ -147,7 +150,6 @@ def run_retries(db: Session = Depends(get_db)):
             if subscription and subscription.status == "past_due":
                 subscription.status = "active"
 
-            # Cancel remaining pending retries for this invoice
             db.query(PaymentRetry).filter(
                 PaymentRetry.invoice_id == retry.invoice_id,
                 PaymentRetry.status == "pending",
@@ -159,7 +161,6 @@ def run_retries(db: Session = Depends(get_db)):
         else:
             retry.status = "failed"
 
-            # Check if all retries exhausted (max attempt = 3)
             all_retries = db.query(PaymentRetry).filter(
                 PaymentRetry.invoice_id == retry.invoice_id
             ).all()
@@ -168,7 +169,6 @@ def run_retries(db: Session = Depends(get_db)):
             all_failed = all(r.status in ("failed", "cancelled") for r in all_retries if r.id != retry.id)
 
             if retry.attempt_number >= max_attempt and all_failed:
-                # All retries exhausted – cancel subscription
                 if subscription:
                     subscription.status = "cancelled"
                 if invoice:
@@ -186,8 +186,123 @@ def run_retries(db: Session = Depends(get_db)):
 
 
 # ─────────────────────────────────────────
+# Shared helper: build refund record
+# ─────────────────────────────────────────
+def _resolve_refund_amount(invoice: Invoice, payment: Payment, override_amount=None) -> float:
+    paid_amount = payment.amount
+    if override_amount is not None:
+        return float(override_amount)
+
+    subscription = invoice.subscription
+    if subscription:
+        today = date.today()
+        billing = (
+            subscription.billing_cycle
+            or (subscription.plan.billing_interval if subscription.plan else None)
+            or "monthly"
+        )
+        cycle_days = 365 if billing in ("yearly", "annual", "year") else 30
+        invoice_date = invoice.invoice_date
+        if invoice_date:
+            days_used = max(0, (today - invoice_date).days)
+            days_remaining = max(0, cycle_days - days_used)
+            refund_amount = round((paid_amount / cycle_days) * days_remaining, 2)
+            return min(refund_amount, paid_amount)
+    return paid_amount
+
+
+# ─────────────────────────────────────────
+# POST /refunds/request
+# User requests a refund → pending_approval
+# ─────────────────────────────────────────
+@router.post("/refunds/request")
+def request_refund(
+    payload: Any = Body(...),
+    db: Session = Depends(get_db)
+):
+    invoice_id = payload.get("invoice_id")
+    if not invoice_id:
+        raise HTTPException(status_code=400, detail="invoice_id is required")
+
+    invoice = (
+        db.query(Invoice)
+        .options(
+            joinedload(Invoice.customer),
+            joinedload(Invoice.subscription)
+        )
+        .filter(Invoice.id == invoice_id)
+        .first()
+    )
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    # Block duplicate pending requests for same invoice
+    existing = db.query(Refund).filter(
+        Refund.invoice_id == invoice_id,
+        Refund.status == "pending_approval"
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="A refund request is already pending for this invoice")
+
+    payment = (
+        db.query(Payment)
+        .filter(Payment.invoice_id == invoice_id, Payment.status == "paid")
+        .order_by(Payment.id.desc())
+        .first()
+    )
+    if not payment:
+        raise HTTPException(status_code=400, detail="No paid payment found for this invoice")
+
+    paid_amount = payment.amount
+    refund_amount = _resolve_refund_amount(invoice, payment)
+
+    ref_code = f"RFR{uuid.uuid4().hex[:6].upper()}"
+
+    refund = Refund(
+        refund_reference=ref_code,
+        payment_id=payment.id,
+        invoice_id=invoice_id,
+        customer_id=invoice.customer_id,
+        paid_amount=paid_amount,
+        refund_amount=refund_amount,
+        reason=payload.get("reason", "Customer requested refund"),
+        status="pending_approval",
+        requested_by="user"
+    )
+    db.add(refund)
+    db.commit()
+    db.refresh(refund)
+
+    db.add(AuditLog(
+        entity_type="Refund",
+        entity_id=refund.id,
+        action="REQUEST",
+        module="Refunds",
+        description=f"Refund request {ref_code} submitted for Invoice #{invoice_id}",
+        new_value={
+            "refund_reference": ref_code,
+            "paid_amount": paid_amount,
+            "refund_amount": refund_amount,
+            "status": "pending_approval"
+        }
+    ))
+    db.commit()
+
+    return {
+        "id": refund.id,
+        "refundReference": ref_code,
+        "invoiceId": invoice_id,
+        "paidAmount": paid_amount,
+        "refundAmount": refund_amount,
+        "reason": refund.reason,
+        "status": "pending_approval",
+        "message": "Refund request submitted. Awaiting admin approval."
+    }
+
+
+# ─────────────────────────────────────────
 # POST /refunds
-# Issue a refund (prorated or full)
+# Admin directly issues a refund (status=completed immediately)
 # ─────────────────────────────────────────
 @router.post("/refunds")
 def create_refund(
@@ -207,50 +322,20 @@ def create_refund(
         .filter(Invoice.id == invoice_id)
         .first()
     )
-
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
-    # Find latest paid payment for this invoice
     payment = (
         db.query(Payment)
-        .filter(
-            Payment.invoice_id == invoice_id,
-            Payment.status == "paid"
-        )
+        .filter(Payment.invoice_id == invoice_id, Payment.status == "paid")
         .order_by(Payment.id.desc())
         .first()
     )
-
     if not payment:
         raise HTTPException(status_code=400, detail="No paid payment found for this invoice")
 
     paid_amount = payment.amount
-
-    # Prorated refund calculation
-    refund_amount = payload.get("refund_amount")
-    if refund_amount is None:
-        # Auto-calculate proration based on subscription
-        subscription = invoice.subscription
-        if subscription:
-            today = date.today()
-            # billing_cycle is on subscription, billing_interval is on plan
-            billing = (subscription.billing_cycle or
-                       (subscription.plan.billing_interval if subscription.plan else None) or
-                       "monthly")
-            cycle_days = 365 if billing in ("yearly", "annual", "year") else 30
-
-            # Days used since invoice_date
-            invoice_date = invoice.invoice_date
-            if invoice_date:
-                days_used = max(0, (today - invoice_date).days)
-                days_remaining = max(0, cycle_days - days_used)
-                refund_amount = round((paid_amount / cycle_days) * days_remaining, 2)
-                refund_amount = min(refund_amount, paid_amount)
-            else:
-                refund_amount = paid_amount
-        else:
-            refund_amount = paid_amount
+    refund_amount = _resolve_refund_amount(invoice, payment, payload.get("refund_amount"))
 
     refund_amount = float(refund_amount)
     if refund_amount <= 0:
@@ -267,18 +352,15 @@ def create_refund(
         customer_id=invoice.customer_id,
         paid_amount=paid_amount,
         refund_amount=refund_amount,
-        reason=payload.get("reason", "Customer requested refund"),
-        status="completed"
+        reason=payload.get("reason", "Admin issued refund"),
+        status="completed",
+        requested_by="admin"
     )
     db.add(refund)
 
-    # Update payment status
     payment.status = "refunded"
-
-    # Update invoice status
     invoice.status = "refunded"
 
-    # Cancel subscription if full refund
     if invoice.subscription_id and refund_amount >= paid_amount:
         sub = db.query(Subscription).filter(
             Subscription.id == invoice.subscription_id
@@ -289,13 +371,12 @@ def create_refund(
     db.commit()
     db.refresh(refund)
 
-    # Audit log
     db.add(AuditLog(
         entity_type="Refund",
         entity_id=refund.id,
         action="CREATE",
         module="Refunds",
-        description=f"Refund {ref_code} issued for Invoice #{invoice_id}",
+        description=f"Refund {ref_code} issued by admin for Invoice #{invoice_id}",
         new_value={
             "refund_reference": ref_code,
             "paid_amount": paid_amount,
@@ -323,13 +404,117 @@ def create_refund(
 
 
 # ─────────────────────────────────────────
+# PATCH /refunds/{refund_id}/approve
+# Admin approves a pending_approval refund
+# ─────────────────────────────────────────
+@router.patch("/refunds/{refund_id}/approve")
+def approve_refund(refund_id: int, db: Session = Depends(get_db)):
+    refund = (
+        db.query(Refund)
+        .options(
+            joinedload(Refund.customer),
+            joinedload(Refund.invoice).joinedload(Invoice.subscription),
+            joinedload(Refund.payment)
+        )
+        .filter(Refund.id == refund_id)
+        .first()
+    )
+    if not refund:
+        raise HTTPException(status_code=404, detail="Refund not found")
+    if refund.status != "pending_approval":
+        raise HTTPException(status_code=400, detail=f"Refund is already '{refund.status}', cannot approve")
+
+    refund.status = "completed"
+
+    payment = refund.payment
+    if payment:
+        payment.status = "refunded"
+
+    invoice = refund.invoice
+    if invoice:
+        invoice.status = "refunded"
+        if invoice.subscription_id and refund.refund_amount >= refund.paid_amount:
+            sub = db.query(Subscription).filter(
+                Subscription.id == invoice.subscription_id
+            ).first()
+            if sub and sub.status in ("active", "past_due"):
+                sub.status = "cancelled"
+
+    db.commit()
+
+    db.add(AuditLog(
+        entity_type="Refund",
+        entity_id=refund.id,
+        action="APPROVE",
+        module="Refunds",
+        description=f"Refund {refund.refund_reference} approved by admin",
+        new_value={"status": "completed"}
+    ))
+    db.commit()
+
+    return {
+        "id": refund.id,
+        "refundReference": refund.refund_reference,
+        "status": "completed",
+        "message": "Refund approved and processed successfully"
+    }
+
+
+# ─────────────────────────────────────────
+# PATCH /refunds/{refund_id}/reject
+# Admin rejects a pending_approval refund
+# ─────────────────────────────────────────
+@router.patch("/refunds/{refund_id}/reject")
+def reject_refund(
+    refund_id: int,
+    payload: Any = Body(default={}),
+    db: Session = Depends(get_db)
+):
+    refund = (
+        db.query(Refund)
+        .filter(Refund.id == refund_id)
+        .first()
+    )
+    if not refund:
+        raise HTTPException(status_code=404, detail="Refund not found")
+    if refund.status != "pending_approval":
+        raise HTTPException(status_code=400, detail=f"Refund is already '{refund.status}', cannot reject")
+
+    refund.status = "rejected"
+    if payload and payload.get("reason"):
+        refund.reason = payload["reason"]
+
+    db.commit()
+
+    db.add(AuditLog(
+        entity_type="Refund",
+        entity_id=refund.id,
+        action="REJECT",
+        module="Refunds",
+        description=f"Refund {refund.refund_reference} rejected by admin",
+        new_value={"status": "rejected"}
+    ))
+    db.commit()
+
+    return {
+        "id": refund.id,
+        "refundReference": refund.refund_reference,
+        "status": "rejected",
+        "message": "Refund request rejected"
+    }
+
+
+# ─────────────────────────────────────────
 # GET /refunds
-# Refund history
+# Refund history (admin: all; user: filter by email)
+# Supports ?status= for filtering pending_approval etc.
 # ─────────────────────────────────────────
 @router.get("/refunds")
 def list_refunds(
     page: int = Query(1, ge=1),
     pageSize: int = Query(20),
+    customer_email: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     q = (
@@ -340,6 +525,12 @@ def list_refunds(
         )
         .order_by(Refund.id.desc())
     )
+
+    if customer_email:
+        q = q.join(Customer, Refund.customer_id == Customer.id).filter(Customer.email == customer_email)
+
+    if status:
+        q = q.filter(Refund.status == status)
 
     total = q.count()
     refunds = q.offset((page - 1) * pageSize).limit(pageSize).all()
@@ -354,10 +545,12 @@ def list_refunds(
             "invoiceNumber": r.invoice.invoice_number if r.invoice else "",
             "customerId": r.customer_id,
             "customerName": r.customer.name if r.customer else "",
+            "customerEmail": r.customer.email if r.customer else "",
             "paidAmount": r.paid_amount,
             "refundAmount": r.refund_amount,
             "reason": r.reason,
             "status": r.status,
+            "requestedBy": r.requested_by,
             "createdAt": r.created_at.isoformat() if r.created_at else None
         })
 
@@ -393,5 +586,6 @@ def get_refund(refund_id: int, db: Session = Depends(get_db)):
         "refundAmount": r.refund_amount,
         "reason": r.reason,
         "status": r.status,
+        "requestedBy": r.requested_by,
         "createdAt": r.created_at.isoformat() if r.created_at else None
     }

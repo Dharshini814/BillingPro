@@ -128,3 +128,123 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "subscriptionGrowth": sub_growth,
         "paymentSuccessRate": payment_success_rate,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  M3 – Task 1: Admin Dashboard & Subscription Metrics
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/summary")
+def get_dashboard_summary(db: Session = Depends(get_db)):
+    """
+    Returns high-level KPIs:
+      total_customers, active_subscriptions, cancelled_subscriptions,
+      mrr, churn_rate, trial_conversion_rate
+    """
+    from app.models.plan import Plan
+
+    total_customers = db.query(func.count(Customer.id)).scalar() or 0
+
+    active_subscriptions = (
+        db.query(func.count(Subscription.id))
+        .filter(Subscription.status == "active")
+        .scalar() or 0
+    )
+
+    cancelled_subscriptions = (
+        db.query(func.count(Subscription.id))
+        .filter(Subscription.status == "cancelled")
+        .scalar() or 0
+    )
+
+    trial_subscriptions = (
+        db.query(func.count(Subscription.id))
+        .filter(Subscription.status == "trial")
+        .scalar() or 0
+    )
+
+    past_due_subscriptions = (
+        db.query(func.count(Subscription.id))
+        .filter(Subscription.status == "past_due")
+        .scalar() or 0
+    )
+
+    total_subscriptions = (
+        db.query(func.count(Subscription.id)).scalar() or 0
+    )
+
+    # MRR: sum of amount for active subscriptions (monthly equivalent)
+    mrr = (
+        db.query(func.coalesce(func.sum(Subscription.amount), 0))
+        .filter(Subscription.status == "active")
+        .scalar() or 0
+    )
+
+    # Churn Rate = cancelled / total * 100
+    churn_rate = round((cancelled_subscriptions / total_subscriptions * 100), 2) \
+        if total_subscriptions > 0 else 0.0
+
+    # Trial Conversion Rate = those who moved from trial -> active / total trials ever started
+    # We approximate: count active subs that started as trial (had trial status at some point)
+    # Since we track cancelled_at and status, we count subs that are now active
+    # and were once trial (start_date exists = they went through lifecycle).
+    # Simpler reliable approximation: active / (active + trial) * 100 (conversion funnel)
+    total_trials_started = active_subscriptions + trial_subscriptions
+    trial_conversion_rate = round(
+        (active_subscriptions / total_trials_started * 100), 2
+    ) if total_trials_started > 0 else 0.0
+
+    return {
+        "total_customers": total_customers,
+        "active_subscriptions": active_subscriptions,
+        "cancelled_subscriptions": cancelled_subscriptions,
+        "trial_subscriptions": trial_subscriptions,
+        "past_due_subscriptions": past_due_subscriptions,
+        "mrr": float(mrr),
+        "churn_rate": churn_rate,
+        "trial_conversion_rate": trial_conversion_rate,
+    }
+
+
+@router.get("/revenue-by-plan")
+def get_revenue_by_plan(db: Session = Depends(get_db)):
+    """
+    Returns revenue grouped by plan for active subscriptions.
+    [{"plan": "Basic", "revenue": 50000}, ...]
+    """
+    from app.models.plan import Plan
+
+    rows = (
+        db.query(Plan.name, func.coalesce(func.sum(Subscription.amount), 0).label("revenue"))
+        .join(Subscription, Subscription.plan_id == Plan.id)
+        .filter(Subscription.status == "active")
+        .group_by(Plan.name)
+        .all()
+    )
+
+    return [{"plan": row.name, "revenue": float(row.revenue)} for row in rows]
+
+
+@router.get("/subscription-metrics")
+def get_subscription_metrics(db: Session = Depends(get_db)):
+    """
+    Returns counts for each subscription status.
+    """
+    statuses = ["active", "trial", "past_due", "cancelled"]
+    result = {}
+    for s in statuses:
+        count = (
+            db.query(func.count(Subscription.id))
+            .filter(Subscription.status == s)
+            .scalar() or 0
+        )
+        result[s] = count
+
+    total = sum(result.values())
+    return {
+        "active": result["active"],
+        "trial": result["trial"],
+        "past_due": result["past_due"],
+        "cancelled": result["cancelled"],
+        "total": total,
+    }

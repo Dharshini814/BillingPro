@@ -67,6 +67,20 @@ MIGRATIONS = [
     ("customers.currency defaults",
      "UPDATE customers SET currency = 'INR' WHERE currency IS NULL OR currency = ''"),
 
+    # ── customers: wallet_balance (mirrors alembic c3d4e5f6a7b8) ───────────────────────
+    ("customers.wallet_balance",
+     "ALTER TABLE customers ADD COLUMN IF NOT EXISTS wallet_balance FLOAT NOT NULL DEFAULT 0.0"),
+
+    # ── plans: is_active soft-archive flag ─────────────────────
+    ("plans.is_active",
+     "ALTER TABLE plans ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE"),
+
+    # ── invoices: type + notes for prorated/wallet invoices ────
+    ("invoices.invoice_type",
+     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_type VARCHAR(30) DEFAULT 'regular'"),
+    ("invoices.notes",
+     "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS notes TEXT"),
+
     # ── payment_retries table ──────────────────────────
     ("table:payment_retries", """
         CREATE TABLE IF NOT EXISTS payment_retries (
@@ -93,11 +107,15 @@ MIGRATIONS = [
             paid_amount      FLOAT NOT NULL,
             refund_amount    FLOAT NOT NULL,
             reason           TEXT,
-            status           VARCHAR(20) NOT NULL DEFAULT 'completed',
+            status           VARCHAR(20) NOT NULL DEFAULT 'pending_approval',
+            requested_by     VARCHAR(20) DEFAULT 'user',
             created_at       TIMESTAMPTZ DEFAULT NOW(),
             updated_at       TIMESTAMPTZ DEFAULT NOW()
         )
     """),
+    # ── refunds: add requested_by if missing (for existing tables) ──
+    ("refunds.requested_by",
+     "ALTER TABLE refunds ADD COLUMN IF NOT EXISTS requested_by VARCHAR(20) DEFAULT 'user'"),
 ]
 
 

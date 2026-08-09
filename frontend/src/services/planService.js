@@ -15,8 +15,11 @@ const mapPlan = (plan) => ({
 
 export const planService = {
   async list({ includeArchived = false } = {}) {
-    const { data } = await api.get("/plans/");
+    const params = {}
+    if (includeArchived) params.includeArchived = true
+    const { data } = await api.get("/plans/", { params });
     let plans = data.map(mapPlan);
+    // Also filter client-side as safety net (backend already filters when includeArchived=false)
     if (!includeArchived) plans = plans.filter((p) => !p.archived);
     return plans;
   },
@@ -30,7 +33,7 @@ export const planService = {
     const { data } = await api.post("/plans/", {
       name: plan.name,
       price: Number(plan.price),
-      billing_interval: plan.billingInterval,
+      billing_interval: plan.billingInterval ?? plan.interval ?? "month",
       trial_days: plan.trialDays ? Number(plan.trialDays) : 0,
       features: plan.features,
     });
@@ -41,15 +44,17 @@ export const planService = {
     const { data } = await api.put(`/plans/${id}`, {
       name: updates.name,
       price: Number(updates.price),
-      billing_interval: updates.billingInterval,
-      trial_days: Number(updates.trialDays),
+      billing_interval: updates.billingInterval ?? updates.interval ?? "month",
+      trial_days: Number(updates.trialDays ?? 0),
       features: updates.features,
     });
     return mapPlan(data);
   },
 
+  // Soft-archive: calls PATCH /plans/{id}/archive — marks is_active=False on backend,
+  // plan row is preserved so existing subscription FK references stay intact.
   async archive(id) {
-    const { data } = await api.delete(`/plans/${id}`);
+    const { data } = await api.patch(`/plans/${id}/archive`);
     return data;
   },
 

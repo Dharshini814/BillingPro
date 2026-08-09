@@ -40,3 +40,9 @@
 
 @media (max-width: 900px) { .statsRow { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 600px) { .statsRow { grid-template-columns: repeat(2,1fr); } }
+
+/* Responsive: scroll the table horizontally instead of squishing on narrow screens */
+@media (max-width: 780px) {
+  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tableHead, .tableRow { min-width: 680px; }
+}

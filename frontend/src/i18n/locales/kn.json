@@ -15,7 +15,8 @@
     "myInvoices": "ನನ್ನ ಇನ್ವಾಯ್ಸ್‌ಗಳು",
     "myPayments": "ನನ್ನ ಪಾವತಿಗಳು",
     "support": "ಬೆಂಬಲ",
-    "failedPayments": "ವಿಫಲ ಪಾವತಿಗಳು"
+    "failedPayments": "ವಿಫಲ ಪಾವತಿಗಳು",
+    "myWallet": "Wallet & Refunds"
   },
   "auth": {
     "signIn": "ಸೈನ್ ಇನ್",

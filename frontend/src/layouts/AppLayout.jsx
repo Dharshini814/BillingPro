@@ -9,7 +9,7 @@ import NotificationPanel from '../components/common/NotificationPanel.jsx'
 import {
   GridIcon, LayersIcon, UsersIcon, RefreshIcon, FileIcon,
   CreditCardIcon, ShieldIcon, SettingsIcon, LogOutIcon,
-  SunIcon, MoonIcon, BellIcon, MenuIcon, ChevronLeftIcon, UserIcon, AlertIcon
+  SunIcon, MoonIcon, BellIcon, MenuIcon, ChevronLeftIcon, UserIcon, AlertIcon, DollarIcon
 } from '../components/common/Icons.jsx'
 import styles from './AppLayout.module.css'
 
@@ -31,6 +31,7 @@ const USER_NAV = [
   { key: 'myPlan',       path: '/my-plan',            Icon: LayersIcon },
   { key: 'myInvoices',   path: '/my-invoices',        Icon: FileIcon },
   { key: 'myPayments',   path: '/my-payments',        Icon: CreditCardIcon },
+  { key: 'myWallet',     path: '/my-wallet',          Icon: DollarIcon },
   { key: 'support',      path: '/support',            Icon: ShieldIcon },
   { key: 'settings',     path: '/settings',           Icon: SettingsIcon },
 ]

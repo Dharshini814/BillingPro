@@ -19,6 +19,7 @@ import MyPlan from './pages/MyPlan.jsx'
 import Support from './pages/Support.jsx'
 import MyInvoices from './pages/MyInvoices.jsx'
 import MyPayments from './pages/MyPayments.jsx'
+import MyWallet from './pages/MyWallet.jsx'
 import PaymentDashboard from './pages/PaymentDashboard.jsx'
 import FailedPayments from './pages/FailedPayments.jsx'
 
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/my-plan" element={<MyPlan />} />
         <Route path="/my-invoices" element={<MyInvoices />} />
         <Route path="/my-payments" element={<MyPayments />} />
+        <Route path="/my-wallet" element={<MyWallet />} />
         <Route path="/support" element={<Support />} />
       </Route>
 

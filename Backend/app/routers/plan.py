@@ -37,7 +37,8 @@ def to_camel(p: Plan) -> dict:
         "features": features,
         "color": color,
         "subscribers": 0,
-        "archived": False,
+        "archived": not p.is_active,
+        "isActive": p.is_active,
     }
 
 
@@ -46,7 +47,11 @@ def get_all_plans(
     includeArchived: Optional[bool] = Query(False),
     db: Session = Depends(get_db)
 ):
-    plans = db.query(Plan).all()
+    query = db.query(Plan)
+    if not includeArchived:
+        # Hide archived plans from plan-selection views
+        query = query.filter(Plan.is_active == True)  # noqa: E712
+    plans = query.all()
     return [to_camel(p) for p in plans]
 
 
@@ -138,10 +143,13 @@ def archive_plan(plan_id: int, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(status_code=404, detail="Plan not found")
 
-    db.delete(p)
+    # Soft-archive: mark inactive so it is hidden from plan selection,
+    # but the row is preserved so existing subscription foreign keys remain valid.
+    p.is_active = False
     db.commit()
+    db.refresh(p)
 
-    return {"message": "Plan archived"}
+    return {"message": "Plan archived", "id": p.id, "archived": True}
 
 
 @router.delete("/{plan_id}")

@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, func
 from typing import Optional
 
 from app.database import get_db
 
 from app.models.customer import Customer
 from app.models.audit_log import AuditLog
+from app.models.subscription import Subscription
+from app.models.invoice import Invoice
+from app.models.payment import Payment
+from app.models.refund import Refund
+from app.models.plan import Plan
 
 from app.schemas.customer import CustomerCreate, CustomerUpdate
 
@@ -33,6 +38,7 @@ def to_camel(c: Customer) -> dict:
             if c.created_at else None,
         "plan": None,
         "mrr": 0,
+        "walletBalance": round(c.wallet_balance or 0.0, 2),
     }
 
 
@@ -76,9 +82,9 @@ def get_customers(
 
 
     if status and status != "all":
-
+        from sqlalchemy import func as sqlfunc
         q = q.filter(
-            Customer.status == status
+            sqlfunc.lower(Customer.status) == status.lower()
         )
 
 
@@ -110,6 +116,30 @@ def get_customers(
 
 
 
+
+
+# ==========================
+# GET CUSTOMER BY EMAIL
+# ==========================
+
+@router.get("/by-email/{email}")
+def get_customer_by_email(
+    email: str,
+    db: Session = Depends(get_db)
+):
+    c = (
+        db.query(Customer)
+        .filter(Customer.email == email)
+        .first()
+    )
+
+    if not c:
+        raise HTTPException(
+            status_code=404,
+            detail="Customer not found"
+        )
+
+    return to_camel(c)
 
 
 # ==========================
@@ -436,4 +466,160 @@ def delete_customer(
         "message":
         "Customer deleted successfully"
 
+    }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# M3 Task 3 — Customer Billing History, Activity Summary
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/{customer_id}/billing-history")
+def get_billing_history(customer_id: int, db: Session = Depends(get_db)):
+    """
+    Chronological billing timeline for a customer:
+    subscriptions, invoices, payments, refunds — all merged and sorted by date.
+    """
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    events = []
+
+    # Subscriptions
+    subs = (
+        db.query(Subscription)
+        .options(joinedload(Subscription.plan))
+        .filter(Subscription.customer_id == customer_id)
+        .all()
+    )
+    for s in subs:
+        plan_name = s.plan.name if s.plan else "Unknown"
+        events.append({
+            "type": "subscription",
+            "date": s.created_at.isoformat() if s.created_at else None,
+            "title": f"Subscription Created — {plan_name}",
+            "status": s.status,
+            "meta": {"plan": plan_name, "billing_cycle": s.billing_cycle, "amount": s.amount},
+        })
+        if s.cancelled_at:
+            events.append({
+                "type": "subscription_cancelled",
+                "date": s.cancelled_at.isoformat(),
+                "title": f"Subscription Cancelled — {plan_name}",
+                "status": "cancelled",
+                "meta": {"plan": plan_name},
+            })
+
+    # Invoices
+    invoices = (
+        db.query(Invoice)
+        .filter(Invoice.customer_id == customer_id)
+        .all()
+    )
+    for inv in invoices:
+        events.append({
+            "type": "invoice",
+            "date": inv.created_at.isoformat() if inv.created_at else str(inv.invoice_date),
+            "title": f"Invoice Generated — {inv.invoice_number}",
+            "status": inv.status,
+            "meta": {"invoice_number": inv.invoice_number, "amount": inv.total_amount},
+        })
+
+    # Payments
+    payments = (
+        db.query(Payment)
+        .join(Invoice, Payment.invoice_id == Invoice.id)
+        .filter(Invoice.customer_id == customer_id)
+        .all()
+    )
+    for p in payments:
+        label = "Payment Received" if p.status == "paid" else "Payment Failed" if p.status == "failed" else f"Payment {p.status.title()}"
+        events.append({
+            "type": "payment",
+            "date": p.payment_date.isoformat() if p.payment_date else p.created_at.isoformat(),
+            "title": f"{label} — {p.payment_reference}",
+            "status": p.status,
+            "meta": {"amount": p.amount, "method": p.payment_method},
+        })
+
+    # Refunds
+    refunds = (
+        db.query(Refund)
+        .filter(Refund.customer_id == customer_id)
+        .all()
+    )
+    for r in refunds:
+        events.append({
+            "type": "refund",
+            "date": r.created_at.isoformat() if r.created_at else None,
+            "title": f"Refund Issued — {r.refund_reference}",
+            "status": r.status,
+            "meta": {"amount": r.refund_amount, "reason": r.reason},
+        })
+
+    # Sort all events chronologically
+    events.sort(key=lambda e: e["date"] or "", reverse=False)
+
+    return {
+        "customer_id": customer_id,
+        "customer_name": customer.name,
+        "events": events,
+        "total": len(events),
+    }
+
+
+@router.get("/{customer_id}/activity-summary")
+def get_activity_summary(customer_id: int, db: Session = Depends(get_db)):
+    """
+    M3 Task 3 — Customer Activity Summary Card:
+    total_invoices, total_paid, failed_payments, refunds
+    """
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    total_invoices = (
+        db.query(func.count(Invoice.id))
+        .filter(Invoice.customer_id == customer_id)
+        .scalar() or 0
+    )
+
+    total_paid = (
+        db.query(func.coalesce(func.sum(Payment.amount), 0))
+        .join(Invoice, Payment.invoice_id == Invoice.id)
+        .filter(Invoice.customer_id == customer_id, Payment.status == "paid")
+        .scalar() or 0
+    )
+
+    failed_payments = (
+        db.query(func.count(Payment.id))
+        .join(Invoice, Payment.invoice_id == Invoice.id)
+        .filter(Invoice.customer_id == customer_id, Payment.status == "failed")
+        .scalar() or 0
+    )
+
+    total_refunds = (
+        db.query(func.count(Refund.id))
+        .filter(Refund.customer_id == customer_id)
+        .scalar() or 0
+    )
+
+    total_refund_amount = (
+        db.query(func.coalesce(func.sum(Refund.refund_amount), 0))
+        .filter(Refund.customer_id == customer_id)
+        .scalar() or 0
+    )
+
+    active_subscriptions = (
+        db.query(func.count(Subscription.id))
+        .filter(Subscription.customer_id == customer_id, Subscription.status == "active")
+        .scalar() or 0
+    )
+
+    return {
+        "total_invoices": total_invoices,
+        "total_paid": float(total_paid),
+        "failed_payments": failed_payments,
+        "refunds": total_refunds,
+        "total_refund_amount": float(total_refund_amount),
+        "active_subscriptions": active_subscriptions,
     }

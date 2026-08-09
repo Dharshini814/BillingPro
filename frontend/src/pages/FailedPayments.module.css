@@ -48,3 +48,10 @@
 
 .iconBtn { background: none; border: none; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 8px; cursor: pointer; transition: all var(--transition-fast); }
 .iconBtn:hover { color: var(--color-primary); background: rgba(var(--color-primary-rgb), 0.08); }
+
+/* Responsive: scroll tables horizontally instead of squishing on narrow screens */
+@media (max-width: 900px) {
+  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .retryHead, .retryRow { min-width: 880px; }
+  .refundHead, .refundRow { min-width: 800px; }
+}

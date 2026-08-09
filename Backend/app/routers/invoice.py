@@ -48,6 +48,8 @@ def to_camel(inv: Invoice):
         "issuedAt":       inv.invoice_date.isoformat() if inv.invoice_date else None,
         "dueAt":          inv.due_date.isoformat() if inv.due_date else None,
         "status":         inv.status,
+        "invoiceType":    getattr(inv, "invoice_type", None) or "regular",
+        "notes":          getattr(inv, "notes", None),
         "createdAt":      inv.created_at.isoformat() if inv.created_at else None,
     }
 
@@ -149,6 +151,7 @@ def get_invoices(
 ):
     query = (
         db.query(Invoice)
+        .join(Customer, Invoice.customer_id == Customer.id, isouter=True)
         .options(
             joinedload(Invoice.customer),
             joinedload(Invoice.subscription).joinedload(Subscription.plan)
@@ -168,8 +171,12 @@ def get_invoices(
         query = query.filter(Invoice.status == status)
 
     if search and search.strip():
+        s = f"%{search.strip()}%"
         query = query.filter(
-            Invoice.invoice_number.ilike(f"%{search.strip()}%")
+            or_(
+                Invoice.invoice_number.ilike(s),
+                Customer.name.ilike(s),
+            )
         )
 
     if date_from:
@@ -592,3 +599,104 @@ def _generate_pdf(invoice, tax, currency: str) -> bytes:
 
     doc.build(elements)
     return buf.getvalue()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pay Invoice (user-initiated): applies wallet credit, marks invoice paid,
+# transitions subscription from trial → active
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/{invoice_id}/pay")
+def pay_invoice(invoice_id: int, payload: Any = Body(default={}), db: Session = Depends(get_db)):
+    from app.models.payment import Payment
+    from app.models.customer import Customer
+    from app.models.subscription import Subscription
+    from app.models.audit_log import AuditLog
+    from app.utils.tax_engine import calculate_tax
+    import uuid as _uuid
+
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    if invoice.status not in ("unpaid", "failed"):
+        raise HTTPException(status_code=400, detail=f"Invoice is already {invoice.status}")
+
+    customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    # Apply wallet balance
+    wallet_applied = round(min(customer.wallet_balance or 0.0, invoice.total_amount), 2)
+    amount_charged = round(invoice.total_amount - wallet_applied, 2)
+    customer.wallet_balance = round((customer.wallet_balance or 0.0) - wallet_applied, 2)
+
+    # Mark invoice paid
+    invoice.status = "paid"
+
+    # Create payment record
+    pay_ref = f"PAY-{_uuid.uuid4().hex[:8].upper()}"
+    # Use method from request body; auto-set to Wallet if fully wallet-covered
+    requested_method = payload.get("payment_method") if isinstance(payload, dict) else None
+    if wallet_applied >= invoice.total_amount:
+        method = "Wallet"
+    elif requested_method:
+        method = requested_method
+    else:
+        method = "UPI"
+    payment = Payment(
+        invoice_id=invoice.id,
+        payment_reference=pay_ref,
+        amount=invoice.total_amount,
+        payment_method=method,
+        status="paid",
+        payment_date=datetime.utcnow(),
+    )
+    db.add(payment)
+    db.flush()
+
+    # Transition subscription trial → active
+    if invoice.subscription_id:
+        sub = db.query(Subscription).filter(Subscription.id == invoice.subscription_id).first()
+        if sub and sub.status in ("trial", "past_due"):
+            sub.status = "active"
+            sub.status_changed_at = datetime.utcnow()
+
+    # Audit
+    audit = AuditLog(
+        entity_type="invoice",
+        entity_id=invoice.id,
+        action="paid",
+        module="invoices",
+        description=(
+            f"Invoice {invoice.invoice_number} paid by customer. "
+            f"Amount: ₹{invoice.total_amount:.2f}, "
+            f"Wallet applied: ₹{wallet_applied:.2f}, "
+            f"Charged: ₹{amount_charged:.2f}."
+        ),
+        new_value={
+            "invoice_number": invoice.invoice_number,
+            "total": invoice.total_amount,
+            "wallet_applied": wallet_applied,
+            "amount_charged": amount_charged,
+            "payment_ref": pay_ref,
+        },
+    )
+    db.add(audit)
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+
+    return {
+        "success": True,
+        "invoiceId": invoice.id,
+        "invoiceNumber": invoice.invoice_number,
+        "invoiceStatus": invoice.status,
+        "paymentReference": pay_ref,
+        "amount": invoice.total_amount,
+        "walletApplied": wallet_applied,
+        "amountCharged": amount_charged,
+        "message": f"Invoice {invoice.invoice_number} paid successfully.",
+    }

@@ -8,6 +8,8 @@ const mapPayment = (payment) => ({
   amount: payment.amount ?? 0,
   paymentMethod: payment.paymentMethod ?? payment.method ?? payment.payment_method ?? "",
   status: payment.status ?? "pending",
+  paymentStatus: payment.paymentStatus ?? payment.payment_status ?? payment.status ?? "pending",
+  dueDate: payment.dueDate ?? payment.due_date ?? null,
   paymentDate: payment.paymentDate ?? payment.processedAt ?? payment.payment_date ?? payment.createdAt ?? payment.created_at ?? null,
   createdAt: payment.createdAt ?? payment.created_at ?? null,
   updatedAt: payment.updatedAt ?? payment.updated_at ?? null,

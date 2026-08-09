@@ -15,7 +15,8 @@
     "myInvoices": "मेरे चालान",
     "myPayments": "मेरे भुगतान",
     "support": "सहायता",
-    "failedPayments": "विफल भुगतान"
+    "failedPayments": "विफल भुगतान",
+    "myWallet": "Wallet & Refunds"
   },
   "auth": {
     "signIn": "साइन इन",

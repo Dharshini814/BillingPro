@@ -35,11 +35,19 @@ class Refund(Base):
 
     reason = Column(Text, nullable=True)
 
+    # Status lifecycle:
+    # pending_approval → completed  (admin approves)
+    # pending_approval → rejected   (admin rejects)
+    # completed (direct admin-issued refund)
+    # failed
     status = Column(
         String,
         nullable=False,
-        default="completed"
-    )  # completed / pending / failed
+        default="pending_approval"
+    )
+
+    # Who requested: "user" | "admin"
+    requested_by = Column(String, nullable=True, default="user")
 
     created_at = Column(
         DateTime(timezone=True),
