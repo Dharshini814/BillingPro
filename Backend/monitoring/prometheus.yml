@@ -1,0 +1,57 @@
+# Prometheus configuration for BillingPro monitoring
+# Phase 5: Operational Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'billingpro-prod'
+    service: 'billing-api'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # BillingPro API
+  - job_name: 'billingpro-api'
+    static_configs:
+      - targets: ['localhost:8000']
+        labels:
+          environment: 'production'
+          service: 'billing-api'
+    
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    
+    metrics_path: '/metrics'
+    
+    # Optional: Add authentication if needed
+    # basic_auth:
+    #   username: 'prometheus'
+    #   password: 'secure_password'
+
+  # PostgreSQL Database (if using postgres_exporter)
+  - job_name: 'billingpro-postgres'
+    static_configs:
+      - targets: []
+        # - 'postgres-exporter:9187'
+        labels:
+          environment: 'production'
+          service: 'postgres'
+
+  # System metrics (if using node_exporter)
+  - job_name: 'system-metrics'
+    static_configs:
+      - targets: []
+        # - 'node-exporter:9100'
+        labels:
+          environment: 'production'

@@ -1,0 +1,76 @@
+{
+  "dashboard": {
+    "title": "BillingPro - System Overview",
+    "tags": ["billingpro", "overview"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "panels": [
+      {
+        "title": "HTTP Request Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{path}} - {{status_code}}"
+          }
+        ]
+      },
+      {
+        "title": "HTTP Request Latency (p95)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{path}} - p95"
+          }
+        ]
+      },
+      {
+        "title": "Requests In Progress",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "http_requests_in_progress",
+            "legendFormat": "{{method}} {{path}}"
+          }
+        ]
+      },
+      {
+        "title": "HTTP Error Rate (4xx/5xx)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(http_errors_total[5m])",
+            "legendFormat": "{{status_code}} - {{path}}"
+          }
+        ]
+      },
+      {
+        "title": "Database Query Latency",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(db_query_duration_seconds_sum[5m]) / rate(db_query_duration_seconds_count[5m])",
+            "legendFormat": "{{query_type}} - avg latency"
+          }
+        ]
+      },
+      {
+        "title": "Active Database Connections",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "db_connections_active",
+            "legendFormat": "Active connections"
+          }
+        ]
+      }
+    ]
+  }
+}

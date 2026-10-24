@@ -69,6 +69,15 @@ class Payment(Base):
     )
 
 
+    # Idempotency key to prevent duplicate payment processing (Phase 1)
+    idempotency_key = Column(
+        String,
+        unique=True,
+        nullable=True,
+        index=True
+    )
+
+
     invoice = relationship(
         "Invoice",
         back_populates="payments"

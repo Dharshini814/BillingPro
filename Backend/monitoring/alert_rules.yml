@@ -1,0 +1,135 @@
+# Prometheus Alert Rules for BillingPro
+# Phase 5: Operational Monitoring
+
+groups:
+  - name: billingpro_api_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighHTTPErrorRate
+        expr: rate(http_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate detected"
+          description: "Error rate is {{ $value }} errors/sec on {{ $labels.path }}"
+      
+      # Critical error rate
+      - alert: CriticalHTTPErrorRate
+        expr: rate(http_errors_total{status_code=~"5.+"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical 5xx error rate detected"
+          description: "5xx error rate is {{ $value }} errors/sec on {{ $labels.path }}"
+      
+      # Slow API response time
+      - alert: SlowAPIResponse
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API response time is slow"
+          description: "95th percentile latency is {{ $value }}s on {{ $labels.path }}"
+      
+      # High request volume
+      - alert: HighRequestVolume
+        expr: rate(http_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "High request volume detected"
+          description: "Request rate is {{ $value }} requests/sec"
+
+  - name: billingpro_database_alerts
+    interval: 30s
+    rules:
+      # Database connection issues
+      - alert: DatabaseConnectionFailure
+        expr: up{job="billingpro-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection failure"
+          description: "Unable to connect to database"
+      
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: rate(db_query_duration_seconds_sum[5m]) / rate(db_query_duration_seconds_count[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database queries are slow"
+          description: "Average query time is {{ $value }}s for {{ $labels.query_type }}"
+
+  - name: billingpro_business_alerts
+    interval: 1m
+    rules:
+      # Payment failure rate
+      - alert: HighPaymentFailureRate
+        expr: rate(payments_total{status="failed"}[10m]) / rate(payments_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value | humanizePercentage }}"
+      
+      # Critical payment failure rate
+      - alert: CriticalPaymentFailureRate
+        expr: rate(payments_total{status="failed"}[10m]) / rate(payments_total[10m]) > 0.3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical payment failure rate"
+          description: "Payment failure rate is {{ $value | humanizePercentage }} - immediate investigation required"
+      
+      # MRR drop
+      - alert: MRRDropDetected
+        expr: deriv(monthly_recurring_revenue[30m]) < -1000
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "MRR is decreasing"
+          description: "MRR trend shows decrease of {{ $value }} INR/hour"
+      
+      # No subscriptions activity
+      - alert: NoSubscriptionActivity
+        expr: rate(subscriptions_total[1h]) == 0
+        for: 4h
+        labels:
+          severity: info
+        annotations:
+          summary: "No subscription activity detected"
+          description: "No subscriptions created or modified in the last 4 hours"
+      
+      # Invoice generation stopped
+      - alert: InvoiceGenerationStopped
+        expr: rate(invoices_generated_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Invoice generation has stopped"
+          description: "No invoices generated in the last 2 hours"
+
+  - name: billingpro_health_alerts
+    interval: 30s
+    rules:
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="billingpro-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BillingPro API is down"
+          description: "The API service is not responding to health checks"

@@ -1,0 +1,94 @@
+{
+  "dashboard": {
+    "title": "BillingPro - Business Metrics",
+    "tags": ["billingpro", "business"],
+    "timezone": "browser",
+    "refresh": "1m",
+    "panels": [
+      {
+        "title": "Monthly Recurring Revenue (MRR)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "monthly_recurring_revenue",
+            "legendFormat": "MRR (INR)"
+          }
+        ]
+      },
+      {
+        "title": "Active Subscriptions",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 8},
+        "targets": [
+          {
+            "expr": "subscriptions_active"
+          }
+        ]
+      },
+      {
+        "title": "Payment Success Rate",
+        "type": "gauge",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(payments_total{status=\"success\"}[1h]) / rate(payments_total[1h])"
+          }
+        ],
+        "options": {
+          "minValue": 0,
+          "maxValue": 1,
+          "thresholds": [
+            {"value": 0, "color": "red"},
+            {"value": 0.8, "color": "yellow"},
+            {"value": 0.95, "color": "green"}
+          ]
+        }
+      },
+      {
+        "title": "Subscription Events",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(subscriptions_total[5m])",
+            "legendFormat": "{{status}}"
+          }
+        ]
+      },
+      {
+        "title": "Payment Volume by Status",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(payments_total[5m])",
+            "legendFormat": "{{status}}"
+          }
+        ]
+      },
+      {
+        "title": "Payment Amount Processed",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(payments_amount_total[5m])",
+            "legendFormat": "{{currency}} - {{status}}"
+          }
+        ]
+      },
+      {
+        "title": "Invoice Generation Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(invoices_generated_total[5m])",
+            "legendFormat": "Invoices/min"
+          }
+        ]
+      }
+    ]
+  }
+}
