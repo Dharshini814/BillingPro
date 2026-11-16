@@ -68,15 +68,98 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: { cacheName: 'qr-codes', expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 } }
           }
-        ]
+        ],
+        // Exclude API routes from service worker caching in development
+        navigateFallbackDenylist: [/^\/api\//, /^\/chat\//, /^\/dashboard\//, /^\/invoices\//, /^\/payments\//, /^\/customers\//, /^\/subscriptions\//, /^\/plans\//],
       },
-      devOptions: { enabled: true }
+      devOptions: {
+        enabled: true,
+        // Disable service worker for API routes in development
+        suppressWarnings: true
+      }
     })
   ],
   server: {
     port: 5173,
     host: true,      // exposes on local network (0.0.0.0)
-    open: true
+    open: true,
+    // Enable SPA fallback - serve index.html for all routes
+    historyApiFallback: true,
+    // Proxy API requests to backend to avoid CORS issues in dev
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/chat': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/dashboard': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/invoices': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/payments': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/payment-retries': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/refunds': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/customers': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/subscriptions': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/plans': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/users': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/audit-logs': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/settings': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/revenue': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/risk': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/login': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/signup': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    }
   },
   build: {
     outDir: 'dist',

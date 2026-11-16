@@ -14,3 +14,16 @@
   transform: translateY(-3px);
   box-shadow: var(--shadow-float);
 }
+
+/* Mobile responsive padding */
+@media (max-width: 768px) {
+  .pad_md { padding: 16px; }
+  .pad_lg { padding: 20px; }
+  .pad_sm { padding: 12px; }
+}
+
+@media (max-width: 480px) {
+  .pad_md { padding: 12px; }
+  .pad_lg { padding: 16px; }
+  .pad_sm { padding: 10px; }
+}

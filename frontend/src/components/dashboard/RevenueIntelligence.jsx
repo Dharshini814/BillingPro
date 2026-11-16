@@ -3,7 +3,7 @@
  * Phase 4: Displays MRR tracking, collection metrics, forecasting, and insights
  */
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import {
   TrendingUpIcon,
   DollarIcon,
@@ -12,6 +12,7 @@ import {
   RefreshIcon,
   UserIcon
 } from '../common/Icons';
+import Card from '../common/Card';
 import {
   LineChart,
   Line,
@@ -26,8 +27,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { formatCurrency } from '../../utils/formatters';
 
 const RevenueIntelligence = () => {
   const [loading, setLoading] = useState(true);
@@ -42,10 +42,8 @@ const RevenueIntelligence = () => {
   const fetchRevenueSummary = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await axios.get(`${API_URL}/revenue/summary`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Use the centralized api service which handles auth headers automatically
+      const response = await api.get('/revenue/summary');
       setSummary(response.data);
       setError(null);
     } catch (err) {

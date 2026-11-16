@@ -5,12 +5,14 @@ from typing import Optional, Any
 from datetime import date
 
 from app.database import get_db
+from app.core.auth import get_current_user, require_admin
 from app.models.audit_log import AuditLog
 
 
 router = APIRouter(
     prefix="/audit-logs",
-    tags=["Audit Logs"]
+    tags=["Audit Logs"],
+    dependencies=[Depends(require_admin)],  # Phase 2: admin-only
 )
 
 
@@ -156,14 +158,8 @@ def create_log(payload: Any = Body(...), db: Session = Depends(get_db)):
 
 
 # ==========================
-# DELETE AUDIT LOG
+# DELETE AUDIT LOG — REMOVED
 # ==========================
+# Audit logs are append-only for integrity.
+# Deletion is not permitted.
 
-@router.delete("/{log_id}")
-def delete_log(log_id: int, db: Session = Depends(get_db)):
-    log = db.query(AuditLog).filter(AuditLog.id == log_id).first()
-    if not log:
-        raise HTTPException(status_code=404, detail="Audit log not found")
-    db.delete(log)
-    db.commit()
-    return {"message": "Audit log deleted successfully"}

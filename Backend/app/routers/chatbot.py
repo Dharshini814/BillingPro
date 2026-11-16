@@ -84,8 +84,8 @@ def get_current_user_dependency():
 
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_id: int = payload.get("user_id")
-            if user_id is None:
+            email: str = payload.get("sub")
+            if email is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token payload",
@@ -98,7 +98,7 @@ def get_current_user_dependency():
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.email == email).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

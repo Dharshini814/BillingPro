@@ -1,15 +1,15 @@
 import axios from "axios";
+import { TOKEN_KEY } from '../utils/constants';
 
-const API = "http://localhost:8000";
-
+// Use relative URL so requests go through Vite proxy (configured in vite.config.js)
 const api = axios.create({
-  baseURL: API,
+  baseURL: "",  // Empty = same origin, will use Vite proxy
   headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },

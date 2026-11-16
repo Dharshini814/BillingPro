@@ -1,0 +1,104 @@
+/* Risk Dashboard Styles */
+.riskContainer {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tabs {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabList {
+  display: flex;
+  gap: 24px;
+}
+
+.tab {
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  text-transform: capitalize;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+.tab.active {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead th {
+  padding: 12px 8px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.table tbody td {
+  padding: 12px 8px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 48px 32px;
+  color: var(--color-text-secondary);
+}
+
+.riskScoreBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.riskScoreTrack {
+  flex: 1;
+  height: 8px;
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.riskScoreFill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.riskScoreValue {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 35px;
+}

@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import Optional, Any
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.plan import Plan
 
-router = APIRouter(prefix="/plans", tags=["Plans"])
+router = APIRouter(prefix="/plans", tags=["Plans"], dependencies=[Depends(get_current_user)])
 
 
 def to_camel(p: Plan) -> dict:

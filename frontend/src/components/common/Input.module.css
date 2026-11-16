@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  height: 100%; /* Ensure wrapper takes full height */
 }
 
 .label {
@@ -19,18 +20,128 @@
   background: var(--color-bg);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-pressed);
-  transition: box-shadow var(--transition-fast);
-  border: 1.5px solid transparent;
+  transition: all var(--transition-fast);
+  border: 1.5px solid var(--color-border);
+  height: 48px; /* Fixed height for consistency */
+}
+
+/* Force consistent styling for all input wrappers */
+.inputWrap,
+.inputWrap * {
+  box-sizing: border-box;
+}
+
+/* Aggressive reset for all input fields to prevent browser interference */
+.inputWrap input,
+.inputWrap input[type="text"],
+.inputWrap input[type="email"], 
+.inputWrap input[type="tel"],
+.inputWrap input[type="password"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 13px 16px !important;
+}
+
+/* Force exact same styling for phone input wrapper - highest specificity */
+div.phone-field .inputWrap,
+.phone-field div.inputWrap {
+  border: 1.5px solid var(--color-border) !important;
+  background: var(--color-bg) !important;
+  height: 48px !important;
+  box-shadow: var(--shadow-pressed) !important;
+  border-radius: var(--radius-md) !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure phone field focus matches other fields exactly */
+div.phone-field .inputWrap:focus-within,
+.phone-field div.inputWrap:focus-within {
+  border-color: rgba(var(--color-primary-rgb), 0.3) !important;
+  box-shadow: var(--shadow-pressed), var(--shadow-glow) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Reset any browser-specific phone input styling with highest specificity */
+div.phone-field input[type="tel"],
+.phone-field div input[type="tel"],
+div.phone-field .input[type="tel"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 13px 16px !important;
+  height: 100% !important;
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: 0 !important;
 }
 
 .inputWrap:focus-within {
   box-shadow: var(--shadow-pressed), var(--shadow-glow);
-  border-color: rgba(var(--color-primary-rgb), 0.3);
+  border-color: rgba(var(--color-primary-rgb), 0.3) !important;
+  transform: translateY(-1px); /* Subtle lift animation */
+}
+
+.inputWrap:not(.hasError):not(:focus-within) {
+  border-color: var(--color-border) !important; /* Force consistent default border */
+  background: var(--color-bg) !important;
 }
 
 .hasError {
   border-color: var(--color-error) !important;
   box-shadow: var(--shadow-pressed), 0 0 0 3px rgba(255, 90, 90, 0.12) !important;
+}
+
+/* Override any external styling on input wrappers */
+.wrapper .inputWrap {
+  border: 1.5px solid var(--color-border) !important;
+  background: var(--color-bg) !important;
+}
+
+/* Complete reset for all input types in wrapper */
+.inputWrap input {
+  all: unset;
+  flex: 1;
+  padding: 13px 16px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Force consistency for email and tel inputs */
+.inputWrap input[type="email"],
+.inputWrap input[type="tel"],
+.inputWrap input[type="text"],
+.inputWrap input[type="password"] {
+  all: unset;
+  flex: 1;
+  padding: 13px 16px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
 }
 
 .input {
@@ -43,11 +154,78 @@
   font-size: 14px;
   font-weight: 500;
   border-radius: var(--radius-md);
+  height: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .input::placeholder {
   color: var(--color-text-secondary);
   font-weight: 400;
+}
+
+/* Specifically target phone input fields */
+.input[type="tel"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Remove browser autofill styling */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Specific styling for phone input to match others */
+.phone-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.phone-input:focus {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Target phone input by class name for complete reset */
+.phone-input-field,
+input.phone-input-field {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 13px 16px !important;
+  height: 100% !important;
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* Remove autofill styling specifically for phone field */
+.phone-input-field:-webkit-autofill,
+.phone-input-field:-webkit-autofill:hover,
+.phone-input-field:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .withIcon {
@@ -73,9 +251,76 @@
   font-size: 12px;
   color: var(--color-error);
   font-weight: 500;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 .hint {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+/* Nuclear option: Force all inputs in wrappers to be identical */
+div[class*="wrapper"] div[class*="inputWrap"] input {
+  all: unset !important;
+  flex: 1 !important;
+  padding: 13px 16px !important;
+  background: transparent !important;
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure phone field wrapper gets same treatment */
+.phone-field div[class*="inputWrap"] {
+  border: 1.5px solid var(--color-border) !important;
+  background: var(--color-bg) !important;
+  height: 48px !important;
+  box-shadow: var(--shadow-pressed) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+
+/* Mobile responsive input fields */
+@media (max-width: 768px) {
+  .wrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .inputWrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .input {
+    width: 100%;
+    max-width: 100%;
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .input {
+    font-size: 13px !important;
+    padding: 12px 14px !important;
+  }
+  
+  .inputWrap {
+    height: 44px;
+  }
+  
+  .label {
+    font-size: 12px;
+  }
 }

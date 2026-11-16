@@ -6,6 +6,8 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line
 } from 'recharts'
 import KpiCard from '../components/dashboard/KpiCard.jsx'
+import RiskDashboard from '../components/dashboard/SimpleRiskDashboard.jsx'
+import RevenueIntelligence from '../components/dashboard/SimpleRevenueIntelligence.jsx'
 import Card from '../components/common/Card.jsx'
 import Badge from '../components/common/Badge.jsx'
 import {
@@ -17,6 +19,7 @@ import { invoiceService } from '../services/invoiceService.js'
 import { paymentService } from '../services/paymentService.js'
 import { formatCurrency } from '../utils/formatters'
 import { useLang } from '../hooks/useLang.js'
+import Chatbot from '../components/chatbot/Chatbot.jsx'
 import styles from './Dashboard.module.css'
 
 const PIE_COLORS = ['#4CAF50', '#F5C518', '#FF5A5A', '#D4A800', '#7C3AED', '#FFB547']
@@ -70,6 +73,7 @@ export default function Dashboard() {
 
   const { t } = useLang()
   const [loading, setLoading] = useState(true)
+  const [activeView, setActiveView] = useState('overview') // 'overview', 'risk', or 'revenue'
 
   // Existing stats (revenue trend, plan dist, etc.)
   const [stats, setStats] = useState(EMPTY_STATS)
@@ -121,6 +125,72 @@ export default function Dashboard() {
           <p className={styles.pageSubtitle}>{t('dashboard.subtitle')}</p>
         </div>
       </div>
+
+      {/* View Tabs */}
+      <div style={{ marginBottom: 24, borderBottom: '2px solid var(--color-border)' }}>
+        <div style={{ display: 'flex', gap: 32 }}>
+          <button
+            onClick={() => setActiveView('overview')}
+            style={{
+              padding: '12px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeView === 'overview' ? '3px solid #D4A800' : '3px solid transparent',
+              color: activeView === 'overview' ? '#D4A800' : 'var(--color-text-secondary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 15,
+              marginBottom: '-2px'
+            }}
+          >
+            <BarChartIcon size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveView('risk')}
+            style={{
+              padding: '12px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeView === 'risk' ? '3px solid #D4A800' : '3px solid transparent',
+              color: activeView === 'risk' ? '#D4A800' : 'var(--color-text-secondary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 15,
+              marginBottom: '-2px'
+            }}
+          >
+            <AlertIcon size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Payment Risk Intelligence
+          </button>
+          <button
+            onClick={() => setActiveView('revenue')}
+            style={{
+              padding: '12px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeView === 'revenue' ? '3px solid #D4A800' : '3px solid transparent',
+              color: activeView === 'revenue' ? '#D4A800' : 'var(--color-text-secondary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 15,
+              marginBottom: '-2px'
+            }}
+          >
+            <TrendingUpIcon size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Revenue Intelligence
+          </button>
+        </div>
+      </div>
+
+      {/* Render based on active view */}
+      {activeView === 'revenue' ? (
+        <RevenueIntelligence />
+      ) : activeView === 'risk' ? (
+        <RiskDashboard />
+      ) : (
+        <>
+          {/* Overview Content */}
 
       {/* ── M3: Summary KPI Cards ── */}
       <div className={styles.kpiGrid}>
@@ -346,6 +416,11 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+        </>
+      )}
+
+      {/* AI Chatbot */}
+      <Chatbot role="admin" userName={user?.full_name || 'Admin'} />
     </div>
   )
 }

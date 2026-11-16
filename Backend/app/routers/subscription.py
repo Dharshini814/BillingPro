@@ -6,8 +6,10 @@ import math
 import uuid as _uuid
 
 from app.database import get_db
+from app.core.auth import get_current_user
 
 from app.models.subscription import Subscription
+from app.models.user import User
 from app.models.invoice import Invoice
 from app.models.payment import Payment
 from app.models.customer import Customer
@@ -19,7 +21,8 @@ from app.utils.tax_engine import calculate_tax
 
 router = APIRouter(
     prefix="/subscriptions",
-    tags=["Subscriptions"]
+    tags=["Subscriptions"],
+    dependencies=[Depends(get_current_user)],  # Phase 2: JWT auth required
 )
 
 
@@ -95,12 +98,20 @@ def to_camel(s: Subscription):
 # -------------------------
 
 def _next_invoice_number(db: Session) -> str:
-    last = db.query(Invoice).order_by(Invoice.id.desc()).first()
-    last_no = int(last.invoice_number.replace("INV-", "")) if last else 0
-    candidate = f"INV-{last_no + 1:05d}"
+    import re
+    # Find the highest INV- number (ignore ADJ- and other prefixes)
+    invoices = db.query(Invoice).filter(Invoice.invoice_number.like("INV-%")).all()
+    max_num = 0
+    for inv in invoices:
+        match = re.search(r"INV-(\d+)", inv.invoice_number)
+        if match:
+            num = int(match.group(1))
+            if num > max_num:
+                max_num = num
+    candidate = f"INV-{max_num + 1:05d}"
     while db.query(Invoice).filter(Invoice.invoice_number == candidate).first():
-        last_no += 1
-        candidate = f"INV-{last_no + 1:05d}"
+        max_num += 1
+        candidate = f"INV-{max_num + 1:05d}"
     return candidate
 
 
@@ -135,11 +146,17 @@ def get_subscriptions(
     customer_email: Optional[str] = Query(None),
     page: int = Query(1),
     pageSize: int = Query(8),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.core.customer_auth import get_authorized_customer_email
+    
+    # Get the authorized email filter (enforces user can only see their own resources)
+    authorized_email = get_authorized_customer_email(customer_email, current_user)
+    
     query = db.query(Subscription)
-    if customer_email:
-        customer = db.query(Customer).filter(Customer.email == customer_email).first()
+    if authorized_email:
+        customer = db.query(Customer).filter(Customer.email == authorized_email).first()
         if customer:
             query = query.filter(Subscription.customer_id == customer.id)
         else:
@@ -149,6 +166,9 @@ def get_subscriptions(
         normalized = normalize_status(status)
         if normalized == "cancelled":
             query = query.filter(Subscription.status.in_(["cancelled", "canceled"]))
+        elif normalized == "trialing":
+            # Handle both "trialing" and "trial" status
+            query = query.filter(Subscription.status.in_(["trialing", "trial"]))
         else:
             query = query.filter(Subscription.status == normalized)
 
@@ -740,7 +760,16 @@ def get_subscription_history(subscription_id: int, db: Session = Depends(get_db)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/wallet/{customer_email}")
-def get_wallet_balance(customer_email: str, db: Session = Depends(get_db)):
+def get_wallet_balance(
+    customer_email: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from app.core.customer_auth import verify_customer_access
+    
+    # Verify user is authorized to access this customer's wallet
+    verify_customer_access(customer_email, current_user)
+    
     customer = db.query(Customer).filter(Customer.email == customer_email).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -758,7 +787,16 @@ def get_wallet_balance(customer_email: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/wallet/{customer_email}/transactions")
-def get_wallet_transactions(customer_email: str, db: Session = Depends(get_db)):
+def get_wallet_transactions(
+    customer_email: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from app.core.customer_auth import verify_customer_access
+    
+    # Verify user is authorized to access this customer's wallet transactions
+    verify_customer_access(customer_email, current_user)
+    
     customer = db.query(Customer).filter(Customer.email == customer_email).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")

@@ -6,7 +6,6 @@ Implements a deterministic, rule-based scoring system from 0-100 based on:
 - Retry exhaustion
 - Overdue invoice duration
 - Failure frequency in time windows
-- Historical payment success rate
 
 All scoring rules are configurable and explainable.
 """
@@ -30,25 +29,24 @@ class RiskConfig:
     """Configurable risk scoring parameters."""
     
     # Factor weights (should sum to 100)
-    WEIGHT_CONSECUTIVE_FAILURES = 30
-    WEIGHT_RETRY_EXHAUSTION = 25
+    WEIGHT_CONSECUTIVE_FAILURES = 35
+    WEIGHT_RETRY_EXHAUSTION = 30
     WEIGHT_OVERDUE_DURATION = 20
     WEIGHT_FAILURE_FREQUENCY = 15
-    WEIGHT_SUCCESS_RATE = 10
     
     # Thresholds for consecutive failures
     CONSECUTIVE_FAILURES_THRESHOLDS = {
         0: 0,    # No failures
-        2: 10,   # 1-2 failures
-        4: 20,   # 3-4 failures
-        999: 30  # 5+ failures
+        2: 12,   # 1-2 failures
+        4: 24,   # 3-4 failures
+        999: 35  # 5+ failures
     }
     
     # Thresholds for exhausted retries
     EXHAUSTED_RETRIES_THRESHOLDS = {
         0: 0,    # No exhausted retries
-        1: 15,   # 1 exhausted retry sequence
-        999: 25  # 2+ exhausted sequences
+        1: 18,   # 1 exhausted retry sequence
+        999: 30  # 2+ exhausted sequences
     }
     
     # Thresholds for overdue duration (days)
@@ -66,13 +64,6 @@ class RiskConfig:
         1: 0,    # 0-1 failures
         3: 7,    # 2-3 failures
         999: 15  # 4+ failures
-    }
-    
-    # Success rate thresholds (percentage)
-    SUCCESS_RATE_THRESHOLDS = {
-        80: 0,   # >80% success
-        50: 5,   # 50-80% success
-        0: 10    # <50% success
     }
     
     # Risk category thresholds
@@ -214,16 +205,6 @@ def calculate_risk_score(
         config.WEIGHT_FAILURE_FREQUENCY
     )
     
-    # Factor 5: Success Rate
-    success_rate, rate_details = _calculate_success_rate(db, customer.id)
-    evidence["payment_success_rate"] = success_rate
-    evidence["success_rate_details"] = rate_details
-    factors["success_rate"] = _score_success_rate(
-        success_rate,
-        config.SUCCESS_RATE_THRESHOLDS,
-        config.WEIGHT_SUCCESS_RATE
-    )
-    
     # Calculate total score
     total_score = sum(factors.values())
     
@@ -238,11 +219,11 @@ def calculate_risk_score(
     # Generate recommendations
     recommendations = _generate_recommendations(
         category, evidence, consecutive_failures, exhausted_retries,
-        overdue_days, failure_count, success_rate
+        overdue_days, failure_count
     )
     
     # Assess data quality
-    data_quality = _assess_data_quality(rate_details)
+    data_quality = "sufficient"
     
     return RiskScore(
         score=total_score,
@@ -442,24 +423,36 @@ def _calculate_failure_frequency(
 
 def _calculate_success_rate(
     db: Session,
-    customer_id: int
+    customer_id: int,
+    exclude_invoice_id: Optional[int] = None
 ) -> Tuple[float, Dict[str, Any]]:
     """
     Calculate payment success rate percentage.
+    
+    Args:
+        db: Database session
+        customer_id: Customer to assess
+        exclude_invoice_id: Optional invoice ID to exclude from calculation
+                           (useful when assessing risk for current transaction)
     
     Returns:
         (success_rate_percentage, details_dict)
     """
     # Get all payments for customer (exclude pending/unpaid - not yet attempted)
-    payments = (
+    query = (
         db.query(Payment)
         .join(Invoice, Payment.invoice_id == Invoice.id)
         .filter(
             Invoice.customer_id == customer_id,
             Payment.status.in_(["paid", "failed", "refunded"])
         )
-        .all()
     )
+    
+    # Exclude current invoice's payment if specified
+    if exclude_invoice_id:
+        query = query.filter(Invoice.id != exclude_invoice_id)
+    
+    payments = query.all()
     
     if not payments:
         return 100.0, {"message": "No payment history", "insufficient_data": True}
@@ -473,7 +466,8 @@ def _calculate_success_rate(
         "total_payments": total,
         "failed_payments": total - successful,
         "success_rate": round(rate, 2),
-        "sufficient_data": total >= 5  # Need at least 5 payments for meaningful rate
+        "sufficient_data": total >= 5,  # Need at least 5 payments for meaningful rate
+        "excluded_current_invoice": exclude_invoice_id is not None
     }
     
     return rate, details
@@ -538,8 +532,7 @@ def _generate_recommendations(
     consecutive_failures: int,
     exhausted_retries: int,
     overdue_days: int,
-    recent_failures: int,
-    success_rate: float
+    recent_failures: int
 ) -> List[str]:
     """Generate actionable recommendations based on risk factors."""
     recommendations = []
@@ -567,17 +560,11 @@ def _generate_recommendations(
         if overdue_days > 0:
             recommendations.append(f"Invoice overdue by {overdue_days} days - send payment reminder")
         
-        if success_rate < 80:
-            recommendations.append("Below-average success rate - may need payment method update")
-        
         recommendations.append("Consider shorter retry intervals with customer notification")
     
     else:  # low
         recommendations.append("✅ LOW RISK: Normal payment behavior")
         recommendations.append("Standard retry schedule appropriate")
-        
-        if success_rate == 100 and evidence.get("success_rate_details", {}).get("total_payments", 0) < 5:
-            recommendations.append("Limited payment history - continue monitoring")
     
     return recommendations
 

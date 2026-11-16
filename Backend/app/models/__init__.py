@@ -9,3 +9,4 @@ from app.models.payment_retry import PaymentRetry
 from app.models.refund import Refund
 from app.models.audit_log import AuditLog
 from app.models.settings import Settings
+from app.models.chat_history import ChatHistory

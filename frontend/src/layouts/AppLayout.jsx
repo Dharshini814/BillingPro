@@ -9,7 +9,8 @@ import NotificationPanel from '../components/common/NotificationPanel.jsx'
 import {
   GridIcon, LayersIcon, UsersIcon, RefreshIcon, FileIcon,
   CreditCardIcon, ShieldIcon, SettingsIcon, LogOutIcon,
-  SunIcon, MoonIcon, BellIcon, MenuIcon, ChevronLeftIcon, UserIcon, AlertIcon, DollarIcon
+  SunIcon, MoonIcon, BellIcon, MenuIcon, ChevronLeftIcon, UserIcon, AlertIcon, DollarIcon,
+  WalkingBotIcon
 } from '../components/common/Icons.jsx'
 import styles from './AppLayout.module.css'
 
@@ -66,7 +67,7 @@ export default function AppLayout() {
 
           {/* Brand */}
           <div className={styles.brand}>
-            <div className={styles.logoMark}>V</div>
+            <WalkingBotIcon size={32} className={styles.logoBot} />
             {!collapsed && (
               <div>
                 <span className={styles.logoText}>Vaultly</span>

@@ -30,9 +30,16 @@ export const authService = {
     }
   },
 
-  async signUp({ fullName, email, password, role }) {
+  async signUp({ fullName, email, password, role, companyName, phone }) {
     try {
-      const { data } = await api.post("/signup", { full_name: fullName, email, password, role });
+      const { data } = await api.post("/signup", { 
+        full_name: fullName, 
+        email, 
+        password, 
+        role,
+        company_name: companyName,
+        phone 
+      });
       return data;
     } catch (err) {
       const msg =

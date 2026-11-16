@@ -4,12 +4,13 @@ from sqlalchemy import func
 from datetime import date, timedelta
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.invoice import Invoice
 from app.models.payment import Payment
 from app.models.subscription import Subscription
 from app.models.customer import Customer
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/stats")

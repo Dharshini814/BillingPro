@@ -4,6 +4,7 @@ from sqlalchemy import or_, func
 from typing import Optional
 
 from app.database import get_db
+from app.core.auth import get_current_user
 
 from app.models.customer import Customer
 from app.models.audit_log import AuditLog
@@ -12,13 +13,16 @@ from app.models.invoice import Invoice
 from app.models.payment import Payment
 from app.models.refund import Refund
 from app.models.plan import Plan
+from app.models.billing_cycle import BillingCycle
+from app.models.payment_retry import PaymentRetry
 
 from app.schemas.customer import CustomerCreate, CustomerUpdate
 
 
 router = APIRouter(
     prefix="/customers",
-    tags=["Customers"]
+    tags=["Customers"],
+    dependencies=[Depends(get_current_user)],  # Phase 2: JWT auth required
 )
 
 
@@ -426,7 +430,71 @@ def delete_customer(
             detail="Customer not found"
         )
 
+    # Check for active or trial subscriptions
+    active_subs = (
+        db.query(Subscription)
+        .filter(
+            Subscription.customer_id == customer_id,
+            Subscription.status.in_(["active", "trialing", "trial"])
+        )
+        .count()
+    )
 
+    if active_subs > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete customer with {active_subs} active subscription(s). Please cancel subscriptions first."
+        )
+
+    # Get subscription IDs for this customer
+    subscription_ids = [
+        s.id for s in db.query(Subscription.id)
+        .filter(Subscription.customer_id == customer_id)
+        .all()
+    ]
+
+    # Get invoice IDs for this customer
+    invoice_ids = [
+        i.id for i in db.query(Invoice.id)
+        .filter(Invoice.customer_id == customer_id)
+        .all()
+    ]
+
+    # Delete in correct order to avoid foreign key constraints
+    # 1. Delete billing cycles (references subscriptions)
+    if subscription_ids:
+        db.query(BillingCycle).filter(
+            BillingCycle.subscription_id.in_(subscription_ids)
+        ).delete(synchronize_session=False)
+
+    # 2. Delete payment retries (references invoices)
+    if invoice_ids:
+        db.query(PaymentRetry).filter(
+            PaymentRetry.invoice_id.in_(invoice_ids)
+        ).delete(synchronize_session=False)
+
+    # 3. Delete payments (references invoices)
+    if invoice_ids:
+        db.query(Payment).filter(
+            Payment.invoice_id.in_(invoice_ids)
+        ).delete(synchronize_session=False)
+
+    # 4. Delete refunds (references customer)
+    db.query(Refund).filter(
+        Refund.customer_id == customer_id
+    ).delete(synchronize_session=False)
+
+    # 5. Delete invoices (references customer)
+    db.query(Invoice).filter(
+        Invoice.customer_id == customer_id
+    ).delete(synchronize_session=False)
+
+    # 6. Delete subscriptions (references customer)
+    db.query(Subscription).filter(
+        Subscription.customer_id == customer_id
+    ).delete(synchronize_session=False)
+
+    # Create audit log before deleting customer
     audit = AuditLog(
 
         entity_type="customer",
@@ -437,7 +505,7 @@ def delete_customer(
 
         module="customers",
 
-        description="Customer deleted",
+        description=f"Customer deleted with {len(subscription_ids)} subscriptions and {len(invoice_ids)} invoices",
 
         old_value={
 
@@ -454,7 +522,7 @@ def delete_customer(
 
     db.add(audit)
 
-
+    # 7. Finally delete the customer
     db.delete(c)
 
     db.commit()

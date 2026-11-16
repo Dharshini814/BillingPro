@@ -89,7 +89,7 @@ function ActivityCard({ summary, loading }) {
     { label: 'Active Subscriptions', value: summary?.active_subscriptions ?? '—',           color: '#4CAF50' },
   ]
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 10 }}>
       {items.map(({ label, value, color }) => (
         <div key={label} style={{
           background: `${color}10`, border: `1px solid ${color}28`,

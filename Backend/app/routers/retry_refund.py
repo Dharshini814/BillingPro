@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Any, Optional
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.payment import Payment
 from app.models.payment_retry import PaymentRetry
 from app.models.refund import Refund
@@ -26,8 +27,9 @@ from app.models.invoice import Invoice
 from app.models.subscription import Subscription
 from app.models.customer import Customer
 from app.models.audit_log import AuditLog
+from app.models.user import User
 
-router = APIRouter(tags=["Retries & Refunds"])
+router = APIRouter(tags=["Retries & Refunds"], dependencies=[Depends(get_current_user)])
 
 RETRY_SCHEDULE = {1: 1, 2: 3, 3: 7}
 
@@ -124,7 +126,7 @@ def run_retries(db: Session = Depends(get_db)):
     for retry in due_retries:
         retry.attempted_at = datetime.utcnow()
 
-        success = random.random() < 0.80
+        success = random.random() < 0.50
 
         invoice = retry.invoice
         subscription = None
@@ -515,8 +517,14 @@ def list_refunds(
     pageSize: int = Query(20),
     customer_email: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.core.customer_auth import get_authorized_customer_email
+    
+    # Get the authorized email filter (enforces user can only see their own resources)
+    authorized_email = get_authorized_customer_email(customer_email, current_user)
+    
     q = (
         db.query(Refund)
         .options(
@@ -526,8 +534,8 @@ def list_refunds(
         .order_by(Refund.id.desc())
     )
 
-    if customer_email:
-        q = q.join(Customer, Refund.customer_id == Customer.id).filter(Customer.email == customer_email)
+    if authorized_email:
+        q = q.join(Customer, Refund.customer_id == Customer.id).filter(Customer.email == authorized_email)
 
     if status:
         q = q.filter(Refund.status == status)

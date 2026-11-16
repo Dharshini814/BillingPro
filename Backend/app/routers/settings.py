@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.settings import Settings
 from app.schemas.settings import (
     SettingsCreate,
@@ -10,7 +11,8 @@ from app.schemas.settings import (
 
 router = APIRouter(
     prefix="/settings",
-    tags=["Settings"]
+    tags=["Settings"],
+    dependencies=[Depends(get_current_user)],  # Phase 2: JWT auth required
 )
 
 

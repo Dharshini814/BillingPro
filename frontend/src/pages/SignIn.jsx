@@ -46,7 +46,20 @@ export default function SignIn() {
       toast.push({ type: 'success', message: 'Welcome back!' })
       navigate(from, { replace: true })
     } catch (err) {
-      toast.push({ type: 'error', message: err.message || 'Sign in failed.' })
+      let message = 'Sign in failed.'
+      
+      // Better error messages
+      if (err.message?.includes('Invalid email')) {
+        message = 'Account not found. Please sign up first or check your email.'
+      } else if (err.message?.includes('Invalid password')) {
+        message = 'Incorrect password. Please try again.'
+      } else if (err.message?.includes('Network error')) {
+        message = 'Cannot connect to server. Please try again later.'
+      } else if (err.message) {
+        message = err.message
+      }
+      
+      toast.push({ type: 'error', message })
     } finally {
       setLoading(false)
     }

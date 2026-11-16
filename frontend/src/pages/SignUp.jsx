@@ -18,7 +18,7 @@ export default function SignUp() {
   const navigate = useNavigate()
 
   const [form, setForm] = useState({
-    fullName: '', role: 'user', email: '', password: '', confirmPassword: '', companyName: ''
+    fullName: '', role: 'user', email: '', password: '', confirmPassword: '', companyName: '', phone: ''
   })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -42,6 +42,8 @@ export default function SignUp() {
     if (!form.email) e.email = 'Email is required'
     else if (!isValidEmail(form.email)) e.email = 'Enter a valid email'
     if (!form.companyName.trim()) e.companyName = 'Company name is required'
+    if (!form.phone.trim()) e.phone = 'Phone number is required'
+    else if (!/^[\+]?[0-9\s\-\(\)]{10,15}$/.test(form.phone.trim())) e.phone = 'Enter a valid phone number'
     if (!form.password) e.password = 'Password is required'
     else if (form.password.length < 8) e.password = 'Password must be at least 8 characters'
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match'
@@ -99,13 +101,25 @@ export default function SignUp() {
                 autoComplete="email"
               />
               <Input
-                label={t('auth.companyName')}
-                placeholder="Acme Corp"
-                value={form.companyName}
-                onChange={set('companyName')}
-                error={errors.companyName}
+                label={t('auth.phone')}
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={form.phone}
+                onChange={set('phone')}
+                error={errors.phone}
+                autoComplete="tel"
+                wrapperClass="phone-field"
+                className="phone-input-field"
               />
             </div>
+
+            <Input
+              label={t('auth.companyName')}
+              placeholder="Acme Corp"
+              value={form.companyName}
+              onChange={set('companyName')}
+              error={errors.companyName}
+            />
 
             <div>
               <Input

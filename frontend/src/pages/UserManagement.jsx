@@ -31,14 +31,19 @@ export default function UserManagement() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await api.get('/users')
-      setUsers(Array.isArray(data) ? data : [])
+      const { data } = await api.get('/users/?pageSize=1000')
+      console.log('Users API response:', data) // Debug log
+      // Handle both old array format and new paginated format
+      const usersList = Array.isArray(data) ? data : (data.items || [])
+      console.log('Parsed users list:', usersList) // Debug log
+      setUsers(usersList)
     } catch (err) {
+      console.error('Failed to load users:', err)
       toast.push({ type: 'error', message: 'Failed to load users' })
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => { load() }, [load])
 
@@ -56,7 +61,7 @@ export default function UserManagement() {
     }
     setSaving(true)
     try {
-      await api.post('/users', form)
+      await api.post('/users/', form)
       toast.push({ type: 'success', message: `${form.full_name} added successfully.` })
       setModalOpen(false)
       setForm({ full_name: '', email: '', role: 'user', status: 'active', password: '' })

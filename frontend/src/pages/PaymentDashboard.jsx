@@ -50,6 +50,10 @@ export default function PaymentDashboard() {
     setLoading(true)
     try {
       const res = await invoiceService.list({ status, page, pageSize: 8 })
+      if (res.items && res.items.length > 0) {
+        console.log('Refunded invoice data:', JSON.stringify(res.items[0], null, 2))
+        console.log('paymentMethod field:', res.items[0].paymentMethod)
+      }
       setInvoices(res.items || [])
       setTotal(res.total || 0)
     } catch {

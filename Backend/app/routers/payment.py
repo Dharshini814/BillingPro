@@ -4,15 +4,18 @@ from typing import Optional, Any
 import uuid
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.payment import Payment
 from app.models.invoice import Invoice
 from app.models.audit_log import AuditLog
 from app.models.payment_retry import PaymentRetry
+from app.models.user import User
 
 
 router = APIRouter(
     prefix="/payments",
-    tags=["Payments"]
+    tags=["Payments"],
+    dependencies=[Depends(get_current_user)],  # Phase 2: JWT auth required
 )
 
 
@@ -88,8 +91,14 @@ def get_payments(
     customer_email: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     pageSize: int = Query(8),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.core.customer_auth import get_authorized_customer_email
+    
+    # Get the authorized email filter (enforces user can only see their own resources)
+    authorized_email = get_authorized_customer_email(customer_email, current_user)
+    
     q = (
         db.query(Payment)
         .options(
@@ -101,10 +110,10 @@ def get_payments(
     if status != "all":
         q = q.filter(Payment.status == status)
 
-    # Filter to a specific customer by email (used for user-facing My Payments)
-    if customer_email:
+    # Filter to authorized customer email (None = admin sees all)
+    if authorized_email:
         from app.models.customer import Customer as CustomerModel
-        customer = db.query(CustomerModel).filter(CustomerModel.email == customer_email).first()
+        customer = db.query(CustomerModel).filter(CustomerModel.email == authorized_email).first()
         if customer:
             q = q.join(Invoice, Payment.invoice_id == Invoice.id).filter(Invoice.customer_id == customer.id)
         else:

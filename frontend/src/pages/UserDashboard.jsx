@@ -10,6 +10,7 @@ import Card from '../components/common/Card.jsx'
 import KpiCard from '../components/dashboard/KpiCard.jsx'
 import { FileIcon, CreditCardIcon, DollarIcon, RefreshIcon, TrendingUpIcon, CheckIcon } from '../components/common/Icons.jsx'
 import { useNavigate } from 'react-router-dom'
+import Chatbot from '../components/chatbot/Chatbot.jsx'
 import styles from './Dashboard.module.css'
 
 const PIE_COLORS = ['#4CAF50', '#F5C518', '#FF5A5A', '#D4A800']
@@ -247,6 +248,9 @@ export default function UserDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* AI Chatbot */}
+      <Chatbot role="customer" userName={user?.full_name || user?.name || 'User'} />
     </div>
   )
 }

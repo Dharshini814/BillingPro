@@ -785,7 +785,7 @@ export default function Landing() {
               <div className="lp-brand-icon">
                 <svg viewBox="0 0 20 20" fill="none"><path d="M10 2L13.5 8.5H18L13.5 13L15.5 19L10 15.5L4.5 19L6.5 13L2 8.5H6.5L10 2Z" fill="white" opacity=".95"/></svg>
               </div>
-              <span className="lp-brand-name">Vaultly</span>
+              <span className="lp-brand-name">Billing Pro</span>
             </div>
             <div className="lp-navlinks">
               <a href="#features">Features</a>
@@ -808,16 +808,15 @@ export default function Landing() {
         <section className="lp-hero">
           <div className="lpw">
             <div>
-              <div className="lp-badge"><span className="lp-pulse" />&nbsp;Infosys VRI 7.0 · M3 Complete · All Tasks Done</div>
+              <div className="lp-badge"><span className="lp-pulse" />&nbsp;Enterprise-Grade Billing Platform · Production Ready</div>
               <h1>
                 Subscription billing<br />
                 made <span className="lp-hi"><span className="lp-typed-wrap" id="lp-typed">simple</span></span>
               </h1>
               <p className="lp-sub">
-                Vaultly is a full-stack SaaS billing platform built on{' '}
+                Billing Pro is a full-stack SaaS billing platform built on{' '}
                 <strong style={{color:'var(--lp-ink)'}}>React + FastAPI + PostgreSQL</strong>.
-                Manage customers, plans, invoices, UPI QR payments, failed-payment retries,
-                refunds, and a complete audit trail — all in one place.
+                Manage customers, plans, invoices, payments, subscriptions, and comprehensive analytics — all in one unified platform.
               </p>
               <div className="lp-actions">
                 <a className="lpbtn lpbtn-primary lpbtn-lg" href="/signin" onClick={go}>Open Dashboard →</a>
@@ -839,7 +838,7 @@ export default function Landing() {
                   <div className="lp-wd" style={{background:'#FEBC2E'}}/>
                   <div className="lp-wd" style={{background:'#28C840'}}/>
                 </div>
-                <div className="lp-mock-title">Vaultly — Admin Dashboard · localhost:5173</div>
+                <div className="lp-mock-title">Billing Pro — Admin Dashboard · localhost:5174</div>
               </div>
               <div className="lp-mock-body">
                 <div className="lp-mc">
@@ -903,7 +902,7 @@ export default function Landing() {
             <div className="lp-sh lp-sr">
               <div className="lp-ey">✦ Features</div>
               <h2>Everything billing <em>actually needs</em></h2>
-              <p>From plan creation to UPI QR payment — the complete billing lifecycle, fully implemented.</p>
+              <p>From plan creation to payment processing — the complete billing lifecycle, fully implemented with advanced analytics.</p>
             </div>
             <div className="lp-bg">
 
@@ -937,14 +936,14 @@ export default function Landing() {
               </div>
 
               <div className="lp-bc bs7 lp-sr">
-                <div className="lp-btag">UPI QR Payments</div>
-                <div className="lp-bicon">📱</div>
-                <h3>Customers pay by scanning a live QR — no payment gateway needed.</h3>
-                <p>Open any unpaid invoice → "Pay via QR" tab → QR generates for UPI ID <span className="lp-code">vaultly@upi</span>. Scan with GPay, PhonePe, Paytm, or BHIM.</p>
+                <div className="lp-btag">Payment Intelligence</div>
+                <div className="lp-bicon">💳</div>
+                <h3>Comprehensive payment tracking with risk assessment and analytics.</h3>
+                <p>Monitor payment success rates, track failed payments, manage refunds, and analyze payment patterns with real-time intelligence dashboards.</p>
                 <div style={{display:'flex',gap:14,alignItems:'center',marginTop:16}}>
-                  <div style={{width:76,height:76,background:'#fff',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,flexShrink:0,border:'2px solid var(--lp-border2)',boxShadow:'var(--lp-nm-sm)'}}>▦</div>
+                  <div style={{width:76,height:76,background:'#fff',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,flexShrink:0,border:'2px solid var(--lp-border2)',boxShadow:'var(--lp-nm-sm)'}}>📊</div>
                   <div>
-                    {['Open unpaid invoice','Switch to "Pay via QR" tab','QR generated: vaultly@upi','Scan → confirm → Invoice = Paid'].map((s,i)=>(
+                    {['Track payment status','Automated retry scheduling','Risk assessment scoring','Refund management'].map((s,i)=>(
                       <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7,fontSize:12,color:'var(--lp-ink2)'}}>
                         <div style={{width:20,height:20,borderRadius:'50%',background:'var(--lp-accent-t)',color:'var(--lp-gold3)',fontSize:10,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid var(--lp-accent-b)'}}>{i+1}</div>
                         {s}
@@ -1041,7 +1040,7 @@ export default function Landing() {
                   ['01','Admin creates plans via /plans/','Define Starter, Growth, Scale, Enterprise. Set price, billing interval, trial days, features.'],
                   ['02','Add customers & assign subscription','Add customers with country & currency. Assign a plan via POST /subscriptions/.'],
                   ['03','Invoices auto-generated','Tax calculated per country at invoice creation. PDF download via /invoices/{id}/pdf.'],
-                  ['04','Payment — mock card or UPI QR','POST /payments/process simulates 80% success / 20% fail. Or scan live UPI QR (vaultly@upi).'],
+                  ['04','Payment Processing & Analytics','Comprehensive payment tracking with retry management, refund processing, and success rate monitoring.'],
                   ['05','Failed retry queue — Day 1 → 3 → 7','Failed payments queue with auto-retry. After 3 failures subscription is auto-cancelled.'],
                   ['06','Refunds & Audit trail','Issue refunds with proration. Every action logged to /audit-logs/ with actor + timestamp.'],
                 ].map(([n,h,p]) => (
@@ -1065,7 +1064,7 @@ export default function Landing() {
                   <div className="lp-hub-core">💰</div>
                   <div className="lp-hnode" style={{top:10,left:4}}><div className="lp-hni">👥</div><div className="lp-hnl">Customers</div><div className="lp-hns">20 · 4 countries</div></div>
                   <div className="lp-hnode" style={{top:10,right:4}}><div className="lp-hni">🧾</div><div className="lp-hnl">Invoices</div><div className="lp-hns">40 records · PDF</div></div>
-                  <div className="lp-hnode" style={{bottom:20,left:4}}><div className="lp-hni">📱</div><div className="lp-hnl">UPI Payments</div><div className="lp-hns">vaultly@upi</div></div>
+                  <div className="lp-hnode" style={{bottom:20,left:4}}><div className="lp-hni">💳</div><div className="lp-hnl">Payments</div><div className="lp-hns">Multi-method</div></div>
                   <div className="lp-hnode" style={{bottom:20,right:4}}><div className="lp-hni">🔍</div><div className="lp-hnl">Audit Logs</div><div className="lp-hns">60 entries</div></div>
                 </div>
                 <div className="lp-hub-cap">One platform. Customers → Plans → Invoices → Payments → Audit.</div>
@@ -1141,12 +1140,15 @@ export default function Landing() {
             </div>
             <div className="lp-mgrid">
               {[
-                {icon:'📊',name:'Admin Dashboard',desc:'Real-time KPIs from /dashboard/summary — MRR, Active Subs, Churn Rate, Trial Conversion. Revenue by Plan bar chart (Recharts). Subscription Status pie chart.',tag:'M3 Task 1'},
-                {icon:'🧾',name:'Invoice Management',desc:'Full lifecycle: Draft → Unpaid → Paid / Failed / Refunded. Search by invoice number. Download PDF via FastAPI. Pay via UPI QR (vaultly@upi) from invoice detail.',tag:'M3 Task 2'},
-                {icon:'⚠️',name:'Failed Payments & Refunds',desc:'Two-tab: Retry Queue (attempt count, scheduled date, run retries) + Refund History (amount, reason, refunded_at). Retry schedule Day 1→3→7. Auto-cancel on 3rd failure.',tag:'M3 Task 2'},
-                {icon:'👤',name:'Customer Management',desc:'Add customers with country & currency (COUNTRY_CURRENCY_MAP for 30+ countries). Filter Active/Inactive. Click for billing timeline and subscription history.',tag:'M3 Task 3'},
-                {icon:'🔍',name:'Audit Log Viewer',desc:'60 log entries across Subscription, Customer, Invoice, Payment, Plan, User. Filter by entity type, action (created/updated/canceled/refunded/exported), and date range.',tag:'M3 Task 3'},
-                {icon:'📋',name:'Plans & Subscriptions',desc:'CRUD for plans (Starter $29 · Growth $79 · Scale $199 · Enterprise $499). Assign customers to plans. Track status: Active · Trial · Past Due · Cancelled.',tag:'M1 & M2'},
+                {icon:'📊',name:'Revenue Intelligence',desc:'Real-time revenue analytics with MRR tracking, collection rate monitoring, accounts receivable dashboard, and revenue growth trends with forecasting capabilities.',tag:'Advanced Analytics'},
+                {icon:'⚠️',name:'Payment Risk Intelligence',desc:'Comprehensive risk assessment with failed payment tracking, retry management, churn analysis, payment success rates, and automated dunning workflows.',tag:'Risk Management'},
+                {icon:'💳',name:'Payment Management',desc:'Multi-method payment processing with automatic retry scheduling, refund management, payment history tracking, and real-time payment status monitoring.',tag:'Payment Core'},
+                {icon:'👥',name:'Customer Management',desc:'Complete customer lifecycle management with multi-currency support (30+ countries), subscription history, wallet balance tracking, and activity timeline.',tag:'Customer Core'},
+                {icon:'🧾',name:'Invoice & Billing',desc:'Automated invoice generation with multi-country tax calculation, PDF export, payment tracking, proration handling, and comprehensive billing history.',tag:'Billing Core'},
+                {icon:'📋',name:'Subscription Management',desc:'Full subscription lifecycle with automated renewals, trial management, upgrade/downgrade flows, cancellation handling, and lifecycle event tracking.',tag:'Subscription Core'},
+                {icon:'💬',name:'AI Chatbot Support',desc:'Intelligent customer support assistant powered by AI to answer billing questions, check payment status, and provide real-time assistance.',tag:'AI Powered'},
+                {icon:'🔍',name:'Audit & Compliance',desc:'Complete audit trail with user activity logging, change tracking, entity history, security monitoring, and comprehensive compliance reporting.',tag:'Security'},
+                {icon:'📱',name:'Mobile Responsive',desc:'Fully optimized mobile experience with responsive design, touch-friendly interfaces, and seamless cross-device functionality.',tag:'User Experience'},
               ].map(({icon,name,desc,tag},i)=>(
                 <div key={name} className={`lp-mcard lp-sr ${i%3===1?'lp-d1':i%3===2?'lp-d2':''}`}>
                   <div className="lp-mico">{icon}</div>
@@ -1204,7 +1206,7 @@ export default function Landing() {
                 {dot:'#38B2AC',n:'FastAPI (Python 3.11)'},{dot:'#EF4444',n:'SQLAlchemy ORM'},
                 {dot:'#336791',n:'PostgreSQL (resume_db)'},{dot:'#34D399',n:'Alembic Migrations'},
                 {dot:'#7C3AED',n:'Recharts (Charts)'},{dot:'#F97316',n:'JWT Authentication'},
-                {dot:'#C084FC',n:'PWA (Vite Plugin)'},{dot:'#06B6D4',n:'UPI QR (qrserver API)'},
+                {dot:'#C084FC',n:'PWA (Vite Plugin)'},{dot:'#06B6D4',n:'AI Chatbot Support'},
                 {dot:'#F59E0B',n:'Axios (HTTP client)'},{dot:'#60A5FA',n:'React Router v6'},
               ].map(({dot,n})=>(
                 <div key={n} className="lp-tpill"><div className="lp-tdot" style={{background:dot}}/>{n}</div>
@@ -1219,13 +1221,13 @@ export default function Landing() {
             <div className="lp-cta-blob"/>
             <div className="lp-ey" style={{margin:'0 auto 20px'}}>🚀 Ready to explore</div>
             <h2>Your complete billing platform<br/><em>is live and ready.</em></h2>
-            <p>Sign in as Admin (<span className="lp-code">admin@vaultly.io</span>) to explore the full dashboard.</p>
+            <p>Sign in as Admin (<span className="lp-code">admin@billingpro.com</span>) to explore the full dashboard.</p>
             <div className="lp-cta-acts">
               <a className="lpbtn lpbtn-primary lpbtn-lg" href="/signin" onClick={go}>Open Dashboard →</a>
               <a className="lpbtn lpbtn-ghost lpbtn-lg" href="/signup" onClick={goUp}>Create account</a>
             </div>
             <div className="lp-ctrust">
-              <div className="lp-ct">UPI QR Payments (vaultly@upi)</div>
+              <div className="lp-ct">Payment Intelligence Dashboard</div>
               <div className="lp-ct">Auto Tax Engine (10 countries)</div>
               <div className="lp-ct">PWA Installable</div>
               <div className="lp-ct">Full Audit Trail (60+ logs)</div>
@@ -1241,9 +1243,9 @@ export default function Landing() {
               <div>
                 <div className="lp-brand">
                   <div className="lp-brand-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2L13.5 8.5H18L13.5 13L15.5 19L10 15.5L4.5 19L6.5 13L2 8.5H6.5L10 2Z" fill="white" opacity=".95"/></svg></div>
-                  <span className="lp-brand-name">Vaultly</span>
+                  <span className="lp-brand-name">Billing Pro</span>
                 </div>
-                <p className="lp-fdesc">SaaS subscription billing & payment management platform. Built for Infosys VRI 7.0 — M1, M2, M3 complete.</p>
+                <p className="lp-fdesc">Professional SaaS subscription billing & payment management platform with advanced analytics and automation.</p>
               </div>
               <div className="lp-fcol">
                 <h5>Modules</h5>
@@ -1253,7 +1255,7 @@ export default function Landing() {
               </div>
               <div className="lp-fcol">
                 <h5>Features</h5>
-                <a href="#features">UPI QR Payments</a><a href="#tax">Auto Tax Engine</a>
+                <a href="#features">Payment Analytics</a><a href="#tax">Auto Tax Engine</a>
                 <a href="#retry">Retry Queue</a><a href="#features">Billing Timeline</a>
                 <a href="#features">PDF Invoices</a>
               </div>
@@ -1265,8 +1267,8 @@ export default function Landing() {
               </div>
             </div>
             <div className="lp-fbot">
-              <span>© 2026 Vaultly · Backend: FastAPI + PostgreSQL · Frontend: React + Vite</span>
-              <span className="lp-ibadge">Infosys Virtual Internship 7.0 · M3 Complete · All Tasks ✓</span>
+              <span>© 2026 Billing Pro · Backend: FastAPI + PostgreSQL · Frontend: React + Vite</span>
+              <span className="lp-ibadge">Professional Subscription Billing Platform · Enterprise Ready</span>
             </div>
           </div>
         </footer>

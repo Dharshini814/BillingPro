@@ -17,8 +17,26 @@ export default function AuthHero({ title, subtitle }) {
       </div>
 
       <div className={styles.heroCopy}>
-        <h1 className={styles.heroTitle}>{title}</h1>
-        <p className={styles.heroSubtitle}>{subtitle}</p>
+        <h1 className={styles.heroTitle}>
+          {title === 'Create your account' && (
+            <span style={{ 
+              background: 'linear-gradient(135deg, var(--color-primary), #F5C518)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              display: 'inline-block'
+            }}>
+              Welcome! 👋
+            </span>
+          )}
+          {title !== 'Create your account' && title}
+        </h1>
+        <p className={styles.heroSubtitle}>
+          {title === 'Create your account' 
+            ? "Let's get you started with your billing journey — it only takes a minute!" 
+            : subtitle
+          }
+        </p>
       </div>
 
       <div className={styles.heroFooter}>

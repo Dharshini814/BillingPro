@@ -1,14 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
+from typing import Optional
 
 from app.database import get_db
+from app.core.auth import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
 router = APIRouter(
     prefix="/users",
-    tags=["User Management"]
+    tags=["User Management"],
+    dependencies=[Depends(require_admin)],  # Phase 2: admin-only
 )
 
 
@@ -16,8 +19,22 @@ router = APIRouter(
 # GET ALL USERS
 # -----------------------------
 @router.get("/")
-def get_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
+def get_users(
+    page: int = Query(1, ge=1),
+    pageSize: int = Query(20, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    query = db.query(User)
+    total = query.count()
+    
+    users = query.offset((page - 1) * pageSize).limit(pageSize).all()
+    
+    return {
+        "items": users,
+        "total": total,
+        "page": page,
+        "pageSize": pageSize
+    }
 
 
 # -----------------------------
@@ -52,12 +69,18 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already exists"
         )
 
+    # Hash the password using bcrypt
+    hashed_pw = bcrypt.hash(user.password)
+    
+    # Create user with all required fields including username and password
     db_user = User(
+        username=user.email,  # Use email as username
         full_name=user.full_name,
         email=user.email,
-        hashed_password=bcrypt.hash(user.password),
-        role=user.role,
-        status=user.status
+        password=hashed_pw,  # Legacy field
+        hashed_password=hashed_pw,  # Primary field
+        role=user.role if hasattr(user, 'role') and user.role else "user",
+        status=user.status if hasattr(user, 'status') and user.status else "Active"
     )
 
     db.add(db_user)

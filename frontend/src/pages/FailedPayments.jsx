@@ -139,34 +139,43 @@ export default function FailedPayments() {
     setRetryLoading(true)
     try {
       const { data } = await api.get('/payment-retries/', { params: { page: retryPage, pageSize: 20 } })
+      console.log('Payment Retries API Response:', data)
+      console.log('Retries items:', data.items, 'Total:', data.total)
       setRetries(data.items || [])
       setRetryTotal(data.total || 0)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load retries:', err)
       toast.push({ type: 'error', message: 'Failed to load failed payments' })
     } finally { setRetryLoading(false) }
-  }, [retryPage])
+  }, [retryPage, toast])
 
   const loadRequests = useCallback(async () => {
     setRequestsLoading(true)
     try {
       const { data } = await api.get('/refunds', { params: { page: requestsPage, pageSize: 20, status: 'pending_approval' } })
+      console.log('Refund Requests API Response:', data)
+      console.log('Requests items:', data.items, 'Total:', data.total)
       setRequests(data.items || [])
       setRequestsTotal(data.total || 0)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load requests:', err)
       toast.push({ type: 'error', message: 'Failed to load refund requests' })
     } finally { setRequestsLoading(false) }
-  }, [requestsPage])
+  }, [requestsPage, toast])
 
   const loadRefunds = useCallback(async () => {
     setRefundLoading(true)
     try {
       const { data } = await api.get('/refunds', { params: { page: refundPage, pageSize: 20 } })
+      console.log('Refunds API Response:', data)
+      console.log('Refunds items:', data.items, 'Total:', data.total)
       setRefunds(data.items || [])
       setRefundTotal(data.total || 0)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load refunds:', err)
       toast.push({ type: 'error', message: 'Failed to load refund history' })
     } finally { setRefundLoading(false) }
-  }, [refundPage])
+  }, [refundPage, toast])
 
   useEffect(() => { loadRetries() }, [loadRetries])
   useEffect(() => { loadRequests() }, [loadRequests])
@@ -321,11 +330,15 @@ export default function FailedPayments() {
                   <span className={styles.mono}>{r.invoiceNumber || r.invoiceId || '—'}</span>
                   <span className={styles.amount}>{formatCurrency(r.amount)}</span>
                   <span className={styles.attempt}>{r.attemptNumber > 0 ? attemptLabel(r.attemptNumber) : 'No retry'}</span>
-                  <span className={styles.dateCell}>{r.nextRetryDate ? formatDate(r.nextRetryDate) : '—'}</span>
+                  <span className={styles.dateCell}>{r.scheduledDate ? formatDate(r.scheduledDate) : '—'}</span>
                   <Badge status={r.invoiceStatus || 'failed'} />
                   <Badge status={r.status} />
                   <div className={styles.actionCell}>
-                    {r.invoiceStatus === 'paid' || r.status === 'success' ? (
+                    {r.status === 'pending' ? (
+                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                        Scheduled
+                      </span>
+                    ) : r.invoiceStatus === 'paid' || r.status === 'success' ? (
                       <button
                         onClick={() => openRefundModal(r)}
                         style={{

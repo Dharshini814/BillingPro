@@ -1,11 +1,27 @@
-from jose import jwt
+"""
+JWT token creation and verification.
+SECRET_KEY is loaded from environment via config module.
+"""
+
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
+from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-def create_access_token(data: dict, expires_minutes=60):
+
+def create_access_token(data: dict, expires_minutes: int = None) -> str:
+    """Create a JWT access token with the given payload data."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
+    minutes = expires_minutes or ACCESS_TOKEN_EXPIRE_MINUTES
+    expire = datetime.utcnow() + timedelta(minutes=minutes)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_access_token(token: str) -> dict:
+    """
+    Decode and verify a JWT token.
+    Returns the payload dict on success.
+    Raises JWTError on invalid/expired token.
+    """
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

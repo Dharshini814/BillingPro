@@ -5,16 +5,19 @@ from typing import Optional, Any
 from datetime import date, timedelta
 
 from app.database import get_db
+from app.core.auth import get_current_user
 from app.models.invoice import Invoice
 from app.models.subscription import Subscription
 from app.models.customer import Customer
 from app.models.plan import Plan
+from app.models.user import User
 from app.utils.tax_engine import calculate_tax, tax_result_to_dict
 
 
 router = APIRouter(
     prefix="/invoices",
-    tags=["Invoices"]
+    tags=["Invoices"],
+    dependencies=[Depends(get_current_user)],  # Phase 2: JWT auth required
 )
 
 
@@ -23,6 +26,14 @@ router = APIRouter(
 # ──────────────────────────────────────────────────────────
 
 def to_camel(inv: Invoice):
+    # Extract payment method from payments
+    payment_method = None
+    if hasattr(inv, 'payments') and inv.payments:
+        for payment in inv.payments:
+            if hasattr(payment, 'payment_method') and payment.payment_method:
+                payment_method = payment.payment_method
+                break
+    
     return {
         "id":             inv.id,
         "number":         inv.invoice_number,
@@ -51,6 +62,7 @@ def to_camel(inv: Invoice):
         "invoiceType":    getattr(inv, "invoice_type", None) or "regular",
         "notes":          getattr(inv, "notes", None),
         "createdAt":      inv.created_at.isoformat() if inv.created_at else None,
+        "paymentMethod":  payment_method,
     }
 
 
@@ -147,21 +159,28 @@ def get_invoices(
     customer_email: Optional[str] = Query(None),
     page:      int           = Query(1, ge=1),
     pageSize:  Optional[int] = Query(8),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.core.customer_auth import get_authorized_customer_email
+    
+    # Get the authorized email filter (enforces user can only see their own resources)
+    authorized_email = get_authorized_customer_email(customer_email, current_user)
+    
     query = (
         db.query(Invoice)
         .join(Customer, Invoice.customer_id == Customer.id, isouter=True)
         .options(
             joinedload(Invoice.customer),
-            joinedload(Invoice.subscription).joinedload(Subscription.plan)
+            joinedload(Invoice.subscription).joinedload(Subscription.plan),
+            joinedload(Invoice.payments)
         )
     )
 
-    # Filter to a specific customer by email (used for user-facing My Invoices)
-    if customer_email:
+    # Filter to authorized customer email (None = admin sees all)
+    if authorized_email:
         from app.models.customer import Customer as CustomerModel
-        customer = db.query(CustomerModel).filter(CustomerModel.email == customer_email).first()
+        customer = db.query(CustomerModel).filter(CustomerModel.email == authorized_email).first()
         if customer:
             query = query.filter(Invoice.customer_id == customer.id)
         else:
